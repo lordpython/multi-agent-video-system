@@ -1,0 +1,24 @@
+[
+  {
+    "query": "Hi there, I want to create a video about artificial intelligence.",
+    "expected_tool_use": [],
+    "reference": "Hello! I can help you create a video about artificial intelligence. I'll coordinate with my specialized agents to research the topic, write a script, source visual assets, generate voiceover, and assemble the final video. Let me get started on this for you."
+  },
+  {
+    "query": "Create a 60-second video about the benefits of renewable energy.",
+    "expected_tool_use": [
+      {
+        "tool_name": "research_web_search",
+        "tool_input": {
+          "query": "benefits of renewable energy 2024"
+        }
+      }
+    ],
+    "reference": "I'll create a 60-second video about the benefits of renewable energy. Let me start by researching current information about renewable energy benefits, then I'll write a compelling script, source appropriate visual assets, generate professional voiceover, and assemble everything into a polished video."
+  },
+  {
+    "query": "What's the status of my video generation request?",
+    "expected_tool_use": [],
+    "reference": "I can check the status of your video generation request. The system tracks progress through multiple stages: research, script writing, asset sourcing, audio generation, and video assembly. Let me provide you with the current status and estimated completion time."
+  }
+]
