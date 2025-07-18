@@ -63,7 +63,10 @@ remote_app = agent_engines.create(
         "requests",
         "llama-index",
         "pydantic",
-        "asyncio",
+        "ffmpeg-python",
+        "pillow",
+        "openai",
+        "elevenlabs",
     ],
     extra_packages=[
         "./video_system",

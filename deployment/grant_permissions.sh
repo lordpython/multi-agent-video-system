@@ -54,17 +54,24 @@ ROLE_ID="videoSystemRole"
 ROLE_TITLE="Video System Role"
 ROLE_DESCRIPTION="Custom role with permissions for multi-agent video system"
 
+# Define comprehensive permissions needed for the video system
+PERMISSIONS="storage.objects.create,storage.objects.delete,storage.objects.get,storage.objects.list,aiplatform.endpoints.predict,aiplatform.models.predict,secretmanager.versions.access,logging.logEntries.create,monitoring.metricDescriptors.create,monitoring.timeSeries.create"
+
 # Check if the custom role already exists
 echo "Checking if custom role $ROLE_ID exists..."
 if gcloud iam roles describe "$ROLE_ID" --project="$PROJECT_ID" &>/dev/null; then
-  echo "Custom role $ROLE_ID already exists."
+  echo "Custom role $ROLE_ID already exists. Updating permissions..."
+  gcloud iam roles update "$ROLE_ID" \
+    --project="$PROJECT_ID" \
+    --permissions="$PERMISSIONS"
+  echo "Custom role $ROLE_ID updated successfully."
 else
   echo "Custom role $ROLE_ID does not exist. Creating it..."
   gcloud iam roles create "$ROLE_ID" \
     --project="$PROJECT_ID" \
     --title="$ROLE_TITLE" \
     --description="$ROLE_DESCRIPTION" \
-    --permissions="storage.objects.create,storage.objects.delete,storage.objects.get,storage.objects.list,aiplatform.endpoints.predict"
+    --permissions="$PERMISSIONS"
   echo "Custom role $ROLE_ID created successfully."
 fi
 
