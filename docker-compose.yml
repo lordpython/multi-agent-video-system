@@ -1,0 +1,198 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+version: '3.8'
+
+services:
+  # Multi-Agent Video System
+  video-system:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: multi-agent-video-system
+    restart: unless-stopped
+    environment:
+      # Load from .env file
+      - ENVIRONMENT=development
+      - DEBUG_MODE=true
+      - LOG_LEVEL=DEBUG
+      - MONGODB_CONNECTION_STRING=mongodb://mongodb:27017/video_system
+      # Override paths for container
+      - VIDEO_OUTPUT_DIR=/app/output
+      - TEMP_DIR=/app/temp
+      - LOG_DIR=/app/logs
+      - FFMPEG_PATH=/usr/bin/ffmpeg
+    env_file:
+      - .env
+    volumes:
+      # Persistent storage for outputs
+      - video_output:/app/output
+      - video_cache:/app/cache
+      - video_logs:/app/logs
+      - video_sessions:/app/data/sessions
+      # Mount source code for development (comment out for production)
+      - .:/app
+    ports:
+      - "8000:8000"  # API server
+      - "8001:8001"  # Health check endpoint
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - video-system-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "from video_system.shared_libraries.config_manager import validate_system_configuration; exit(0 if not validate_system_configuration() else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MongoDB for session management
+  mongodb:
+    image: mongo:7.0
+    container_name: video-system-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: video_system
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    ports:
+      - "27017:27017"
+    networks:
+      - video-system-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis for caching and rate limiting
+  redis:
+    image: redis:7.2-alpine
+    container_name: video-system-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - video-system-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Nginx reverse proxy (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: video-system-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deployment/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - video-system
+    networks:
+      - video-system-network
+    profiles:
+      - production
+
+  # Monitoring with Prometheus (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: video-system-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./deployment/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - video-system-network
+    profiles:
+      - monitoring
+
+  # Grafana for visualization (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: video-system-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./deployment/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./deployment/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - video-system-network
+    profiles:
+      - monitoring
+
+volumes:
+  # Application data
+  video_output:
+    driver: local
+  video_cache:
+    driver: local
+  video_logs:
+    driver: local
+  video_sessions:
+    driver: local
+  
+  # Database data
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+  redis_data:
+    driver: local
+  
+  # Monitoring data
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  
+  # Nginx logs
+  nginx_logs:
+    driver: local
+
+networks:
+  video-system-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

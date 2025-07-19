@@ -3,7 +3,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 __pycache__/
-
+logs
 # Environments
 .env
 .venv

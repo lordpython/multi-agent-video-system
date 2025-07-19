@@ -8,17 +8,228 @@
     "query": "Create a 60-second video about the benefits of renewable energy.",
     "expected_tool_use": [
       {
-        "tool_name": "research_web_search",
+        "tool_name": "coordinate_research_agent",
         "tool_input": {
-          "query": "benefits of renewable energy 2024"
+          "topic": "benefits of renewable energy",
+          "duration": 60
         }
       }
     ],
     "reference": "I'll create a 60-second video about the benefits of renewable energy. Let me start by researching current information about renewable energy benefits, then I'll write a compelling script, source appropriate visual assets, generate professional voiceover, and assemble everything into a polished video."
   },
   {
+    "query": "Make a 2-minute educational video explaining how photosynthesis works for middle school students.",
+    "expected_tool_use": [
+      {
+        "tool_name": "coordinate_research_agent",
+        "tool_input": {
+          "topic": "photosynthesis process middle school education",
+          "duration": 120,
+          "audience": "middle school students"
+        }
+      }
+    ],
+    "reference": "I'll create a 2-minute educational video explaining photosynthesis for middle school students. I'll research age-appropriate content, create an engaging script with clear explanations, source educational visuals and diagrams, generate a friendly voiceover, and assemble an informative video suitable for the target audience."
+  },
+  {
+    "query": "Create a professional 90-second marketing video about sustainable fashion trends.",
+    "expected_tool_use": [
+      {
+        "tool_name": "coordinate_research_agent",
+        "tool_input": {
+          "topic": "sustainable fashion trends marketing",
+          "duration": 90,
+          "style": "professional"
+        }
+      }
+    ],
+    "reference": "I'll create a professional 90-second marketing video about sustainable fashion trends. I'll research current sustainable fashion information, write a compelling marketing script, source high-quality fashion visuals, generate professional voiceover, and produce a polished marketing video."
+  },
+  {
+    "query": "I need a short 30-second video about climate change impacts.",
+    "expected_tool_use": [
+      {
+        "tool_name": "coordinate_research_agent",
+        "tool_input": {
+          "topic": "climate change impacts",
+          "duration": 30
+        }
+      }
+    ],
+    "reference": "I'll create a 30-second video about climate change impacts. Given the short duration, I'll focus on the most critical information, create a concise but impactful script, source compelling visuals, generate clear voiceover, and produce an effective short-form video."
+  },
+  {
+    "query": "Can you make a 5-minute documentary-style video about space exploration?",
+    "expected_tool_use": [
+      {
+        "tool_name": "coordinate_research_agent",
+        "tool_input": {
+          "topic": "space exploration documentary",
+          "duration": 300,
+          "style": "documentary"
+        }
+      }
+    ],
+    "reference": "I'll create a 5-minute documentary-style video about space exploration. I'll conduct comprehensive research on space exploration topics, develop a detailed documentary script with multiple scenes, source high-quality space-related visuals and footage, generate professional documentary-style narration, and assemble a compelling documentary video."
+  },
+  {
     "query": "What's the status of my video generation request?",
-    "expected_tool_use": [],
+    "expected_tool_use": [
+      {
+        "tool_name": "check_video_status",
+        "tool_input": {
+          "session_id": "current_session"
+        }
+      }
+    ],
     "reference": "I can check the status of your video generation request. The system tracks progress through multiple stages: research, script writing, asset sourcing, audio generation, and video assembly. Let me provide you with the current status and estimated completion time."
+  },
+  {
+    "query": "Create a video about machine learning but I'm not sure what specific aspect to focus on.",
+    "expected_tool_use": [],
+    "reference": "I'd be happy to help you create a video about machine learning! To provide the best content, could you help me understand what specific aspect interests you most? For example: machine learning basics for beginners, applications in healthcare, deep learning techniques, or AI ethics? Also, what's your target audience and preferred video length?"
+  },
+  {
+    "query": "Make a video about quantum computing for beginners with simple explanations and visual analogies.",
+    "expected_tool_use": [
+      {
+        "tool_name": "coordinate_research_agent",
+        "tool_input": {
+          "topic": "quantum computing for beginners simple explanations",
+          "audience": "beginners",
+          "requirements": "visual analogies"
+        }
+      }
+    ],
+    "reference": "I'll create a beginner-friendly video about quantum computing with simple explanations and visual analogies. I'll research accessible explanations of quantum concepts, write a script that uses relatable analogies, source visuals that help illustrate complex concepts simply, generate clear educational narration, and create an engaging educational video."
+  },
+  {
+    "query": "I want a video but the topic is very niche - underwater basket weaving techniques.",
+    "expected_tool_use": [
+      {
+        "tool_name": "coordinate_research_agent",
+        "tool_input": {
+          "topic": "underwater basket weaving techniques niche craft"
+        }
+      }
+    ],
+    "reference": "I'll help you create a video about underwater basket weaving techniques. Even for niche topics, I'll research available information, create an informative script, source relevant visuals (and generate custom images if needed), provide professional narration, and produce your specialized video content."
+  },
+  {
+    "query": "Create a video about a topic that doesn't exist or has no information available.",
+    "expected_tool_use": [
+      {
+        "tool_name": "coordinate_research_agent",
+        "tool_input": {
+          "topic": "non-existent topic with no information"
+        }
+      }
+    ],
+    "reference": "I'll attempt to research your topic, but if insufficient information is found, I'll notify you and suggest alternative approaches. This might include focusing on related topics, creating educational content about why the topic is challenging to research, or helping you refine your request to something with available information."
+  },
+  {
+    "query": "Make a video with multiple speakers and different voice profiles.",
+    "expected_tool_use": [
+      {
+        "tool_name": "coordinate_research_agent",
+        "tool_input": {
+          "topic": "multi-speaker content",
+          "voice_requirements": "multiple voice profiles"
+        }
+      }
+    ],
+    "reference": "I'll create a video with multiple speakers using different voice profiles. I'll research your topic, write a script that incorporates dialogue or multiple perspectives, source appropriate visuals, generate audio with different voice profiles for variety, and assemble a dynamic multi-voice video."
+  },
+  {
+    "query": "I need a video but all the stock images and videos for my topic are copyrighted or unavailable.",
+    "expected_tool_use": [
+      {
+        "tool_name": "coordinate_research_agent",
+        "tool_input": {
+          "topic": "content with limited stock media availability"
+        }
+      }
+    ],
+    "reference": "I'll help create your video even with limited stock media availability. If suitable stock assets aren't found, I'll generate custom images using AI to match your script's visual requirements. This ensures your video has appropriate, copyright-safe visuals that align with your content."
+  },
+  {
+    "query": "Create a video but make sure it has smooth transitions and professional editing.",
+    "expected_tool_use": [
+      {
+        "tool_name": "coordinate_research_agent",
+        "tool_input": {
+          "topic": "user specified topic",
+          "editing_requirements": "smooth transitions professional editing"
+        }
+      }
+    ],
+    "reference": "I'll create a professionally edited video with smooth transitions. After researching and scripting your content, sourcing visuals, and generating audio, I'll ensure the video assembly includes appropriate transitions between scenes, professional timing, and high-quality editing for a polished final product."
+  },
+  {
+    "query": "What happens if the video generation fails or encounters an error?",
+    "expected_tool_use": [],
+    "reference": "If video generation encounters an error, the system provides comprehensive error handling. I'll identify the specific stage where the issue occurred (research, scripting, asset sourcing, audio generation, or video assembly), provide clear error details, suggest recovery options, and offer to retry with alternative approaches or settings."
+  },
+  {
+    "query": "Can you handle multiple video requests at the same time?",
+    "expected_tool_use": [],
+    "reference": "Yes, the system is designed to handle multiple concurrent video generation requests efficiently. Each request is processed asynchronously with its own session tracking, resource management, and progress monitoring. You can submit multiple requests and check their individual statuses as they progress through the pipeline."
+  },
+  {
+    "query": "I want to create a video in a language other than English.",
+    "expected_tool_use": [
+      {
+        "tool_name": "coordinate_research_agent",
+        "tool_input": {
+          "topic": "user specified topic",
+          "language": "non-English language"
+        }
+      }
+    ],
+    "reference": "I can help create videos in different languages. I'll research your topic, create a script in your preferred language, source appropriate visuals, generate voiceover in the target language using suitable voice profiles, and assemble a complete video in your requested language."
+  },
+  {
+    "query": "Create a video with very specific technical requirements - 4K resolution, specific frame rate, and custom aspect ratio.",
+    "expected_tool_use": [
+      {
+        "tool_name": "coordinate_research_agent",
+        "tool_input": {
+          "topic": "user specified topic",
+          "technical_specs": "4K resolution custom frame rate aspect ratio"
+        }
+      }
+    ],
+    "reference": "I'll create a video meeting your specific technical requirements. After researching and scripting your content, sourcing high-quality visuals, and generating audio, I'll ensure the final video assembly meets your specifications for 4K resolution, custom frame rate, and aspect ratio requirements."
+  },
+  {
+    "query": "I need a video for social media - make it engaging and optimized for mobile viewing.",
+    "expected_tool_use": [
+      {
+        "tool_name": "coordinate_research_agent",
+        "tool_input": {
+          "topic": "user specified topic",
+          "platform": "social media",
+          "optimization": "mobile viewing engagement"
+        }
+      }
+    ],
+    "reference": "I'll create an engaging video optimized for social media and mobile viewing. I'll research your topic with social media trends in mind, write an engaging script with hooks and compelling content, source eye-catching visuals, generate dynamic voiceover, and optimize the final video for mobile consumption and social media platforms."
+  },
+  {
+    "query": "Cancel my current video generation request.",
+    "expected_tool_use": [
+      {
+        "tool_name": "cancel_video_request",
+        "tool_input": {
+          "session_id": "current_session"
+        }
+      }
+    ],
+    "reference": "I'll cancel your current video generation request. The system will stop the current processing, clean up any temporary files, and update the session status. If you'd like to start a new video request with different parameters, I'm ready to help."
+  },
+  {
+    "query": "Thanks for creating my video! It looks great.",
+    "expected_tool_use": [],
+    "reference": "You're welcome! I'm glad you're happy with your video. The multi-agent system worked together to research, script, source visuals, generate audio, and assemble everything into your final product. Feel free to request more videos anytime!"
   }
 ]

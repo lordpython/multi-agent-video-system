@@ -12,17 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""FFmpeg video composition tool for combining assets and audio."""
+"""FFmpeg video composition tool for combining assets and audio with comprehensive error handling."""
 
 import subprocess
 import os
 import json
-import logging
+import shutil
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
-# Tool class not needed - using function-based tools
 
-logger = logging.getLogger(__name__)
+from video_system.shared_libraries import (
+    ProcessingError,
+    ResourceError,
+    ValidationError,
+    TimeoutError,
+    RetryConfig,
+    retry_with_exponential_backoff,
+    create_error_response,
+    get_logger,
+    log_error,
+    with_resource_check
+)
+
+# Configure logger for video composition
+logger = get_logger("video_assembly.ffmpeg_composition")
 
 
 class VideoCompositionRequest(BaseModel):
@@ -45,9 +58,20 @@ class VideoCompositionResponse(BaseModel):
     metadata: Dict[str, Any] = Field(default={}, description="Additional metadata")
 
 
+# Configure retry settings for FFmpeg operations
+ffmpeg_retry_config = RetryConfig(
+    max_attempts=2,  # FFmpeg operations are expensive, limit retries
+    base_delay=5.0,
+    max_delay=30.0,
+    exponential_base=2.0,
+    jitter=True
+)
+
+
+@with_resource_check
 def compose_video_with_ffmpeg(request: VideoCompositionRequest) -> VideoCompositionResponse:
     """
-    Compose video using FFmpeg by combining visual assets with audio.
+    Compose video using FFmpeg by combining visual assets with audio with comprehensive error handling.
     
     This function creates a video by:
     1. Creating a filter complex for combining multiple assets
@@ -56,57 +80,164 @@ def compose_video_with_ffmpeg(request: VideoCompositionRequest) -> VideoComposit
     4. Encoding to final output format
     """
     try:
-        # Validate input files exist
-        if not os.path.exists(request.audio_file):
+        # Input validation
+        if not request.video_assets:
+            error = ValidationError("No video assets provided", field="video_assets")
+            log_error(logger, error)
             return VideoCompositionResponse(
                 success=False,
                 output_file="",
                 duration=0.0,
-                error_message=f"Audio file not found: {request.audio_file}"
+                error_message=error.message
+            )
+        
+        if not request.audio_file:
+            error = ValidationError("No audio file provided", field="audio_file")
+            log_error(logger, error)
+            return VideoCompositionResponse(
+                success=False,
+                output_file="",
+                duration=0.0,
+                error_message=error.message
+            )
+        
+        if not request.output_path:
+            error = ValidationError("No output path provided", field="output_path")
+            log_error(logger, error)
+            return VideoCompositionResponse(
+                success=False,
+                output_file="",
+                duration=0.0,
+                error_message=error.message
+            )
+        
+        # Check if FFmpeg is available
+        if not _check_ffmpeg_availability():
+            error = ResourceError("FFmpeg is not available on this system", resource_type="ffmpeg")
+            log_error(logger, error)
+            return VideoCompositionResponse(
+                success=False,
+                output_file="",
+                duration=0.0,
+                error_message=error.message
+            )
+        
+        logger.info(f"Starting video composition with {len(request.video_assets)} assets")
+        
+        # Validate input files exist
+        if not os.path.exists(request.audio_file):
+            error = ValidationError(f"Audio file not found: {request.audio_file}", field="audio_file")
+            log_error(logger, error)
+            return VideoCompositionResponse(
+                success=False,
+                output_file="",
+                duration=0.0,
+                error_message=error.message
             )
         
         missing_assets = [asset for asset in request.video_assets if not os.path.exists(asset)]
         if missing_assets:
+            error = ValidationError(f"Missing video assets: {missing_assets}", field="video_assets")
+            log_error(logger, error)
             return VideoCompositionResponse(
                 success=False,
                 output_file="",
                 duration=0.0,
-                error_message=f"Missing video assets: {missing_assets}"
+                error_message=error.message
+            )
+        
+        # Validate file formats
+        validation_errors = _validate_media_files(request.video_assets, request.audio_file)
+        if validation_errors:
+            error = ValidationError(f"Media file validation failed: {'; '.join(validation_errors)}")
+            log_error(logger, error)
+            return VideoCompositionResponse(
+                success=False,
+                output_file="",
+                duration=0.0,
+                error_message=error.message
+            )
+        
+        # Check available disk space
+        if not _check_disk_space(request.output_path):
+            error = ResourceError("Insufficient disk space for video composition", resource_type="disk")
+            log_error(logger, error)
+            return VideoCompositionResponse(
+                success=False,
+                output_file="",
+                duration=0.0,
+                error_message=error.message
             )
         
         # Create output directory if it doesn't exist
-        os.makedirs(os.path.dirname(request.output_path), exist_ok=True)
+        try:
+            os.makedirs(os.path.dirname(request.output_path), exist_ok=True)
+        except OSError as e:
+            error = ResourceError(f"Failed to create output directory: {str(e)}", resource_type="filesystem")
+            log_error(logger, error)
+            return VideoCompositionResponse(
+                success=False,
+                output_file="",
+                duration=0.0,
+                error_message=error.message
+            )
         
         # Build FFmpeg command for video composition
         cmd = _build_ffmpeg_composition_command(request)
         
-        logger.info(f"Executing FFmpeg command: {' '.join(cmd)}")
+        logger.info(f"Executing FFmpeg command with {len(cmd)} parameters")
         
-        # Execute FFmpeg command
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=300  # 5 minute timeout
-        )
-        
-        if result.returncode != 0:
-            error_msg = f"FFmpeg failed with return code {result.returncode}: {result.stderr}"
-            logger.error(error_msg)
+        # Execute FFmpeg command with timeout and error handling
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=600  # 10 minute timeout for video processing
+            )
+            
+            if result.returncode != 0:
+                error_msg = f"FFmpeg failed with return code {result.returncode}: {result.stderr}"
+                error = ProcessingError(error_msg, stage="ffmpeg_execution")
+                log_error(logger, error, {"command": " ".join(cmd[:5]) + "..."})  # Log first 5 args only
+                return VideoCompositionResponse(
+                    success=False,
+                    output_file="",
+                    duration=0.0,
+                    error_message=error.message
+                )
+            
+        except subprocess.TimeoutExpired:
+            error = TimeoutError("FFmpeg command timed out after 10 minutes", timeout_duration=600.0)
+            log_error(logger, error)
             return VideoCompositionResponse(
                 success=False,
                 output_file="",
                 duration=0.0,
-                error_message=error_msg
+                error_message=error.message
             )
         
-        # Get video duration
-        duration = _get_video_duration(request.output_path)
+        # Verify output file was created
+        if not os.path.exists(request.output_path):
+            error = ProcessingError("Output video file was not created", stage="output_verification")
+            log_error(logger, error)
+            return VideoCompositionResponse(
+                success=False,
+                output_file="",
+                duration=0.0,
+                error_message=error.message
+            )
         
-        # Get video metadata
-        metadata = _get_video_metadata(request.output_path)
+        # Get video duration and metadata
+        try:
+            duration = _get_video_duration(request.output_path)
+            metadata = _get_video_metadata(request.output_path)
+        except Exception as e:
+            logger.warning(f"Failed to get video metadata: {str(e)}")
+            duration = 0.0
+            metadata = {}
         
-        logger.info(f"Video composition successful: {request.output_path}")
+        logger.info(f"Video composition successful: {request.output_path} ({duration:.2f}s)")
         
         return VideoCompositionResponse(
             success=True,
@@ -115,23 +246,23 @@ def compose_video_with_ffmpeg(request: VideoCompositionRequest) -> VideoComposit
             metadata=metadata
         )
         
-    except subprocess.TimeoutExpired:
-        error_msg = "FFmpeg command timed out after 5 minutes"
-        logger.error(error_msg)
+    except (ValidationError, ProcessingError, ResourceError, TimeoutError) as e:
+        log_error(logger, e, {"output_path": request.output_path})
         return VideoCompositionResponse(
             success=False,
             output_file="",
             duration=0.0,
-            error_message=error_msg
+            error_message=e.message
         )
+    
     except Exception as e:
-        error_msg = f"Unexpected error during video composition: {str(e)}"
-        logger.error(error_msg)
+        error = ProcessingError(f"Unexpected error during video composition: {str(e)}", original_exception=e)
+        log_error(logger, error, {"output_path": request.output_path})
         return VideoCompositionResponse(
             success=False,
             output_file="",
             duration=0.0,
-            error_message=error_msg
+            error_message=error.message
         )
 
 
@@ -273,6 +404,110 @@ def _get_video_metadata(video_path: str) -> Dict[str, Any]:
         logger.warning(f"Could not get video metadata: {e}")
     
     return {}
+
+
+def _check_ffmpeg_availability() -> bool:
+    """Check if FFmpeg is available on the system."""
+    try:
+        result = subprocess.run(
+            ["ffmpeg", "-version"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        return False
+
+
+def _validate_media_files(video_assets: List[str], audio_file: str) -> List[str]:
+    """Validate media file formats and accessibility."""
+    errors = []
+    
+    # Check video assets
+    for asset in video_assets:
+        if not os.access(asset, os.R_OK):
+            errors.append(f"Cannot read video asset: {asset}")
+            continue
+        
+        # Check file extension
+        ext = os.path.splitext(asset.lower())[1]
+        valid_video_exts = {'.mp4', '.avi', '.mov', '.mkv', '.webm', '.flv'}
+        valid_image_exts = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp'}
+        
+        if ext not in valid_video_exts and ext not in valid_image_exts:
+            errors.append(f"Unsupported video asset format: {asset}")
+    
+    # Check audio file
+    if not os.access(audio_file, os.R_OK):
+        errors.append(f"Cannot read audio file: {audio_file}")
+    else:
+        ext = os.path.splitext(audio_file.lower())[1]
+        valid_audio_exts = {'.wav', '.mp3', '.aac', '.m4a', '.ogg', '.flac'}
+        
+        if ext not in valid_audio_exts:
+            errors.append(f"Unsupported audio format: {audio_file}")
+    
+    return errors
+
+
+def _check_disk_space(output_path: str, min_space_gb: float = 1.0) -> bool:
+    """Check if there's sufficient disk space for video output."""
+    try:
+        output_dir = os.path.dirname(output_path)
+        if not output_dir:
+            output_dir = "."
+        
+        # Get disk usage
+        total, used, free = shutil.disk_usage(output_dir)
+        free_gb = free / (1024**3)
+        
+        logger.info(f"Available disk space: {free_gb:.2f} GB")
+        return free_gb >= min_space_gb
+    except OSError:
+        # If we can't check disk space, assume it's available
+        logger.warning("Could not check disk space")
+        return True
+
+
+def check_ffmpeg_health() -> Dict[str, Any]:
+    """Perform a health check on FFmpeg availability and functionality."""
+    try:
+        # Check if FFmpeg is available
+        if not _check_ffmpeg_availability():
+            return {
+                "status": "unhealthy",
+                "details": {"error": "FFmpeg is not available on this system"}
+            }
+        
+        # Check FFprobe availability
+        try:
+            result = subprocess.run(
+                ["ffprobe", "-version"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            if result.returncode != 0:
+                return {
+                    "status": "degraded",
+                    "details": {"error": "FFprobe is not available"}
+                }
+        except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+            return {
+                "status": "degraded",
+                "details": {"error": "FFprobe is not available"}
+            }
+        
+        return {
+            "status": "healthy",
+            "details": {"message": "FFmpeg and FFprobe are available and functional"}
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "details": {"error": str(e)}
+        }
 
 
 # Create the tool function for ADK

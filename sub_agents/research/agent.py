@@ -12,13 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Research Agent for gathering information and context for video content."""
+"""Research Agent for gathering information and context for video content with error handling."""
 
 from google.adk.agents import Agent
 from .prompts import return_instructions_research
-from .tools.web_search import serper_web_search_tool
+from .tools.web_search import serper_web_search_tool, check_serper_health
 
-# Research Agent with web search capabilities
+from video_system.shared_libraries import (
+    get_health_monitor,
+    get_logger,
+    ProcessingError,
+    log_error
+)
+
+# Configure logger for research agent
+logger = get_logger("research_agent")
+
+# Register health checks for research services
+health_monitor = get_health_monitor()
+health_monitor.service_registry.register_service(
+    service_name="serper_api",
+    health_check_func=check_serper_health,
+    health_check_interval=300,  # Check every 5 minutes
+    critical=True
+)
+
+logger.info("Research agent initialized with health monitoring")
+
+# Research Agent with web search capabilities and error handling
 research_agent = Agent(
     model='gemini-2.5-flash',
     name='research_agent',

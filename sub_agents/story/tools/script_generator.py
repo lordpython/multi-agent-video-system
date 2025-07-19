@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Script generation tools for the Story Agent."""
+"""Script generation tools for the Story Agent with comprehensive error handling."""
 
 import json
 from typing import Dict, Any, List, Optional
@@ -20,6 +20,17 @@ from pydantic import BaseModel, Field
 from video_system.shared_libraries.models import (
     VideoScript, VideoScene, ResearchData, ScriptRequest
 )
+from video_system.shared_libraries import (
+    ValidationError,
+    ProcessingError,
+    get_logger,
+    log_error,
+    create_error_response,
+    with_resource_check
+)
+
+# Configure logger for script generation
+logger = get_logger("story.script_generator")
 
 
 class ScriptGenerationInput(BaseModel):
@@ -37,6 +48,7 @@ class SceneBreakdownInput(BaseModel):
     scene_count: int = Field(default=5, description="Desired number of scenes")
 
 
+@with_resource_check
 def generate_video_script(
     research_data: Dict[str, Any],
     target_duration: int = 60,
@@ -44,7 +56,7 @@ def generate_video_script(
     tone: str = "informative"
 ) -> Dict[str, Any]:
     """
-    Generate a complete video script based on research data.
+    Generate a complete video script based on research data with comprehensive error handling.
     
     Args:
         research_data: Dictionary containing research facts, sources, and key points
@@ -56,6 +68,25 @@ def generate_video_script(
         Dict containing the generated video script with scenes and metadata
     """
     try:
+        # Input validation
+        if not isinstance(research_data, dict):
+            error = ValidationError("Research data must be a dictionary", field="research_data")
+            log_error(logger, error)
+            return create_error_response(error)
+        
+        if not (10 <= target_duration <= 600):
+            error = ValidationError("Target duration must be between 10 and 600 seconds", field="target_duration")
+            log_error(logger, error)
+            return create_error_response(error)
+        
+        valid_styles = ["professional", "casual", "educational", "entertainment", "documentary"]
+        if style not in valid_styles:
+            error = ValidationError(f"Style must be one of: {', '.join(valid_styles)}", field="style")
+            log_error(logger, error)
+            return create_error_response(error)
+        
+        logger.info(f"Generating video script with duration: {target_duration}s, style: {style}, tone: {tone}")
+        
         # Extract research information
         facts = research_data.get("facts", [])
         key_points = research_data.get("key_points", [])
@@ -63,14 +94,22 @@ def generate_video_script(
         context = research_data.get("context", {})
         
         if not facts and not key_points:
-            return {
-                "error": "Insufficient research data to generate script",
-                "script": None
-            }
+            error = ProcessingError("Insufficient research data to generate script - no facts or key points provided")
+            log_error(logger, error, {"research_data_keys": list(research_data.keys())})
+            return create_error_response(error)
+        
+        # Validate content quality
+        total_content_length = sum(len(str(item)) for item in facts + key_points)
+        if total_content_length < 50:
+            error = ProcessingError("Research content is too brief to generate a meaningful script")
+            log_error(logger, error, {"content_length": total_content_length})
+            return create_error_response(error)
         
         # Determine optimal scene count based on duration
         scene_count = max(3, min(8, target_duration // 10))
         scene_duration = target_duration / scene_count
+        
+        logger.info(f"Planning {scene_count} scenes with {scene_duration:.1f}s each")
         
         # Generate title from key points or facts
         title = _generate_title(key_points, facts, context)
@@ -79,6 +118,18 @@ def generate_video_script(
         scenes = _create_scenes_from_research(
             facts, key_points, scene_count, scene_duration, style, tone
         )
+        
+        if not scenes:
+            error = ProcessingError("Failed to generate any scenes from research data")
+            log_error(logger, error)
+            return create_error_response(error)
+        
+        # Validate generated scenes
+        validation_errors = _validate_generated_scenes(scenes, target_duration)
+        if validation_errors:
+            error = ProcessingError(f"Scene validation failed: {'; '.join(validation_errors)}")
+            log_error(logger, error, {"validation_errors": validation_errors})
+            return create_error_response(error)
         
         # Create the video script
         script_data = {
@@ -90,9 +141,12 @@ def generate_video_script(
                 "tone": tone,
                 "source_count": len(sources),
                 "fact_count": len(facts),
-                "generated_scenes": len(scenes)
+                "generated_scenes": len(scenes),
+                "generation_timestamp": logger.handlers[0].formatter.formatTime(logger.makeRecord("", 0, "", 0, "", (), None)) if logger.handlers else "unknown"
             }
         }
+        
+        logger.info(f"Successfully generated script with {len(scenes)} scenes for {target_duration}s video")
         
         return {
             "script": script_data,
@@ -100,13 +154,19 @@ def generate_video_script(
             "message": f"Generated {len(scenes)} scenes for {target_duration}s video"
         }
         
+    except (ValidationError, ProcessingError) as e:
+        # These are already properly formatted VideoSystemError instances
+        log_error(logger, e, {"target_duration": target_duration, "style": style})
+        return create_error_response(e)
+    
     except Exception as e:
-        return {
-            "error": f"Failed to generate script: {str(e)}",
-            "script": None
-        }
+        # Handle unexpected errors
+        error = ProcessingError(f"Unexpected error during script generation: {str(e)}", original_exception=e)
+        log_error(logger, error, {"target_duration": target_duration, "style": style})
+        return create_error_response(error)
 
 
+@with_resource_check
 def create_scene_breakdown(
     script_content: str,
     target_duration: int = 60,
@@ -124,11 +184,34 @@ def create_scene_breakdown(
         Dict containing scene breakdown with visual requirements and timing
     """
     try:
+        # Input validation
+        if not isinstance(script_content, str):
+            error = ValidationError("Script content must be a string", field="script_content")
+            log_error(logger, error)
+            return create_error_response(error)
+        
         if not script_content.strip():
-            return {
-                "error": "Script content cannot be empty",
-                "scenes": []
-            }
+            error = ValidationError("Script content cannot be empty", field="script_content")
+            log_error(logger, error)
+            return create_error_response(error)
+        
+        if not (10 <= target_duration <= 600):
+            error = ValidationError("Target duration must be between 10 and 600 seconds", field="target_duration")
+            log_error(logger, error)
+            return create_error_response(error)
+        
+        if not (2 <= scene_count <= 10):
+            error = ValidationError("Scene count must be between 2 and 10", field="scene_count")
+            log_error(logger, error)
+            return create_error_response(error)
+        
+        logger.info(f"Creating scene breakdown: {scene_count} scenes, {target_duration}s total")
+        
+        # Validate content length
+        if len(script_content.strip()) < 100:
+            error = ProcessingError("Script content is too short to create meaningful scenes")
+            log_error(logger, error, {"content_length": len(script_content)})
+            return create_error_response(error)
         
         # Calculate scene duration
         scene_duration = target_duration / scene_count
@@ -136,13 +219,34 @@ def create_scene_breakdown(
         # Split content into logical segments
         segments = _split_content_into_segments(script_content, scene_count)
         
+        if not segments or len(segments) < scene_count:
+            error = ProcessingError("Failed to split content into required number of segments")
+            log_error(logger, error, {"segments_created": len(segments), "required": scene_count})
+            return create_error_response(error)
+        
         # Create scenes with visual requirements
         scenes = []
         for i, segment in enumerate(segments, 1):
-            scene = _create_scene_from_segment(
-                segment, i, scene_duration
-            )
+            if not segment.strip():
+                logger.warning(f"Empty segment found at position {i}")
+                continue
+                
+            scene = _create_scene_from_segment(segment, i, scene_duration)
             scenes.append(scene)
+        
+        if not scenes:
+            error = ProcessingError("No valid scenes could be created from the script content")
+            log_error(logger, error)
+            return create_error_response(error)
+        
+        # Validate scene breakdown
+        validation_errors = _validate_scene_breakdown(scenes, target_duration)
+        if validation_errors:
+            error = ProcessingError(f"Scene breakdown validation failed: {'; '.join(validation_errors)}")
+            log_error(logger, error, {"validation_errors": validation_errors})
+            return create_error_response(error)
+        
+        logger.info(f"Successfully created {len(scenes)} scenes from script content")
         
         return {
             "scenes": scenes,
@@ -151,11 +255,14 @@ def create_scene_breakdown(
             "success": True
         }
         
+    except (ValidationError, ProcessingError) as e:
+        log_error(logger, e, {"target_duration": target_duration, "scene_count": scene_count})
+        return create_error_response(e)
+    
     except Exception as e:
-        return {
-            "error": f"Failed to create scene breakdown: {str(e)}",
-            "scenes": []
-        }
+        error = ProcessingError(f"Unexpected error during scene breakdown: {str(e)}", original_exception=e)
+        log_error(logger, error, {"target_duration": target_duration, "scene_count": scene_count})
+        return create_error_response(error)
 
 
 def _generate_title(key_points: List[str], facts: List[str], context: Dict[str, Any]) -> str:
@@ -361,6 +468,75 @@ def _create_scene_from_segment(segment: str, scene_num: int, duration: float) ->
         "duration": duration,
         "assets": []
     }
+
+
+def _validate_generated_scenes(scenes: List[Dict[str, Any]], target_duration: float) -> List[str]:
+    """Validate generated scenes for consistency and quality."""
+    errors = []
+    
+    if not scenes:
+        errors.append("No scenes generated")
+        return errors
+    
+    # Check scene numbering
+    expected_numbers = list(range(1, len(scenes) + 1))
+    actual_numbers = [scene.get("scene_number", 0) for scene in scenes]
+    if actual_numbers != expected_numbers:
+        errors.append("Scene numbers are not sequential")
+    
+    # Check total duration
+    total_scene_duration = sum(scene.get("duration", 0) for scene in scenes)
+    if abs(total_scene_duration - target_duration) > 2.0:  # Allow 2 second tolerance
+        errors.append(f"Total scene duration ({total_scene_duration}s) doesn't match target ({target_duration}s)")
+    
+    # Check individual scenes
+    for i, scene in enumerate(scenes, 1):
+        if not scene.get("description"):
+            errors.append(f"Scene {i} missing description")
+        
+        if not scene.get("dialogue"):
+            errors.append(f"Scene {i} missing dialogue")
+        
+        if not scene.get("visual_requirements"):
+            errors.append(f"Scene {i} missing visual requirements")
+        
+        duration = scene.get("duration", 0)
+        if duration <= 0 or duration > 120:
+            errors.append(f"Scene {i} has invalid duration: {duration}s")
+    
+    return errors
+
+
+def _validate_scene_breakdown(scenes: List[Dict[str, Any]], target_duration: float) -> List[str]:
+    """Validate scene breakdown for consistency and quality."""
+    errors = []
+    
+    if not scenes:
+        errors.append("No scenes in breakdown")
+        return errors
+    
+    # Check scene numbering
+    for i, scene in enumerate(scenes, 1):
+        if scene.get("scene_number") != i:
+            errors.append(f"Scene {i} has incorrect scene number: {scene.get('scene_number')}")
+    
+    # Check total duration
+    total_duration = sum(scene.get("duration", 0) for scene in scenes)
+    if abs(total_duration - target_duration) > 2.0:  # Allow 2 second tolerance
+        errors.append(f"Total duration ({total_duration}s) doesn't match target ({target_duration}s)")
+    
+    # Check scene content
+    for i, scene in enumerate(scenes, 1):
+        if not scene.get("dialogue", "").strip():
+            errors.append(f"Scene {i} has empty dialogue")
+        
+        if len(scene.get("dialogue", "")) < 10:
+            errors.append(f"Scene {i} dialogue is too short")
+        
+        if not scene.get("visual_requirements"):
+            errors.append(f"Scene {i} missing visual requirements")
+    
+    return errors
 
 
 # Create tool functions for ADK

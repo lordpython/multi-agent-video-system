@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Google Gemini TTS API integration tool for audio agent."""
+"""Google Gemini TTS API integration tool for audio agent with comprehensive error handling."""
 
 import base64
 import mimetypes
@@ -25,6 +25,23 @@ from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
 
+from video_system.shared_libraries import (
+    APIError,
+    NetworkError,
+    ValidationError,
+    ProcessingError,
+    TimeoutError,
+    RetryConfig,
+    retry_with_exponential_backoff,
+    FallbackManager,
+    FallbackConfig,
+    create_error_response,
+    get_logger,
+    log_error,
+    with_resource_check,
+    with_rate_limit
+)
+
 
 class GeminiTTSInput(BaseModel):
     """Input schema for Gemini TTS tool."""
@@ -34,6 +51,21 @@ class GeminiTTSInput(BaseModel):
     output_format: str = Field(default="wav", description="Output audio format: 'wav', 'mp3'")
 
 
+# Configure logger for TTS
+logger = get_logger("audio.gemini_tts")
+
+# Configure retry behavior for TTS
+tts_retry_config = RetryConfig(
+    max_attempts=3,
+    base_delay=2.0,
+    max_delay=30.0,
+    exponential_base=2.0,
+    jitter=True
+)
+
+
+@with_resource_check
+@with_rate_limit(tokens=2)
 def generate_speech_with_gemini(
     text: str, 
     voice_name: str = "Zephyr", 
@@ -41,7 +73,7 @@ def generate_speech_with_gemini(
     output_format: str = "wav"
 ) -> Dict[str, Any]:
     """
-    Generate speech using Google's Gemini TTS API.
+    Generate speech using Google's Gemini TTS API with comprehensive error handling.
     
     Args:
         text: The text to convert to speech
@@ -52,31 +84,57 @@ def generate_speech_with_gemini(
     Returns:
         Dict containing generated audio data and metadata
     """
+    # Input validation
+    if not isinstance(text, str) or not text.strip():
+        error = ValidationError("Text cannot be empty", field="text")
+        log_error(logger, error)
+        return _create_error_audio_response(text, "Text cannot be empty")
+    
+    if len(text.strip()) > 5000:  # Reasonable limit for TTS
+        error = ValidationError("Text is too long for TTS generation", field="text")
+        log_error(logger, error, {"text_length": len(text)})
+        return _create_error_audio_response(text, "Text is too long for TTS generation")
+    
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        return {
-            "audio_files": [{
-                "audio_data": b"",
-                "base64": "",
-                "error": "GEMINI_API_KEY environment variable is not set",
-                "source": "gemini_tts",
-                "status": "error"
-            }],
-            "text": text,
-            "total_files": 0,
-            "source": "gemini_tts"
-        }
+        error = APIError("GEMINI_API_KEY environment variable is not set", api_name="Gemini")
+        log_error(logger, error)
+        return _create_error_audio_response(text, "GEMINI_API_KEY environment variable is not set")
     
     try:
-        # Initialize the Gemini client
-        client = genai.Client(api_key=api_key)
+        logger.info(f"Generating speech for text: {text[:50]}... (voice: {voice_name})")
         
-        # Validate parameters
+        # Validate and sanitize parameters
         valid_voices = ["Zephyr", "Charon", "Kore", "Fenrir"]
         if voice_name not in valid_voices:
+            logger.warning(f"Invalid voice '{voice_name}', using 'Charon' as fallback")
             voice_name = "Charon"
         
         temperature = max(0.0, min(temperature, 2.0))  # Clamp between 0.0 and 2.0
+        
+        # Use retry mechanism for TTS generation
+        return _generate_speech_with_retry(text, voice_name, temperature, output_format, api_key)
+        
+    except (APIError, ValidationError, ProcessingError) as e:
+        log_error(logger, e, {"text_length": len(text), "voice": voice_name})
+        return _create_error_audio_response(text, str(e))
+    
+    except Exception as e:
+        error = ProcessingError(f"Unexpected error during TTS generation: {str(e)}", original_exception=e)
+        log_error(logger, error, {"text_length": len(text), "voice": voice_name})
+        return _create_error_audio_response(text, str(error))
+
+
+@retry_with_exponential_backoff(
+    retry_config=tts_retry_config,
+    exceptions=(APIError, NetworkError, TimeoutError),
+    logger=logger
+)
+def _generate_speech_with_retry(text: str, voice_name: str, temperature: float, output_format: str, api_key: str) -> Dict[str, Any]:
+    """Internal function to generate speech with retry logic."""
+    try:
+        # Initialize the Gemini client
+        client = genai.Client(api_key=api_key)
         
         # Set up the content and configuration
         contents = [
@@ -98,72 +156,72 @@ def generate_speech_with_gemini(
             ),
         )
         
-        # Generate speech
+        # Generate speech with timeout handling
         audio_files = []
         file_index = 0
         
-        for chunk in client.models.generate_content_stream(
-            model="gemini-2.5-flash-preview-tts",
-            contents=contents,
-            config=generate_content_config,
-        ):
-            if (chunk.candidates is None
-                or chunk.candidates[0].content is None
-                or chunk.candidates[0].content.parts is None):
-                continue
-            
-            if (chunk.candidates[0].content.parts[0].inline_data 
-                and chunk.candidates[0].content.parts[0].inline_data.data):
+        try:
+            for chunk in client.models.generate_content_stream(
+                model="gemini-2.5-flash-preview-tts",
+                contents=contents,
+                config=generate_content_config,
+            ):
+                if (chunk.candidates is None
+                    or chunk.candidates[0].content is None
+                    or chunk.candidates[0].content.parts is None):
+                    continue
                 
-                inline_data = chunk.candidates[0].content.parts[0].inline_data
-                audio_data = inline_data.data
-                mime_type = inline_data.mime_type
-                
-                # Convert to WAV format if needed
-                if output_format.lower() == "wav":
-                    audio_data = convert_to_wav(audio_data, mime_type)
-                    file_extension = ".wav"
-                    final_mime_type = "audio/wav"
-                else:
-                    file_extension = mimetypes.guess_extension(mime_type) or ".wav"
-                    final_mime_type = mime_type
-                
-                # Convert to base64 for storage/transmission
-                base64_audio = base64.b64encode(audio_data).decode('utf-8')
-                
-                formatted_audio = {
-                    "audio_data": audio_data,
-                    "base64": base64_audio,
-                    "file_extension": file_extension,
-                    "mime_type": final_mime_type,
-                    "voice_name": voice_name,
-                    "temperature": temperature,
-                    "source": "gemini_tts",
-                    "model": "gemini-2.5-flash-preview-tts",
-                    "status": "success",
-                    "usage_rights": "Generated content - check Google usage policies",
-                    "media_type": "audio",
-                    "text": text,
-                    "file_id": f"gemini_tts_{file_index}",
-                    "duration_estimate": estimate_audio_duration(text)
-                }
-                
-                audio_files.append(formatted_audio)
-                file_index += 1
+                if (chunk.candidates[0].content.parts[0].inline_data 
+                    and chunk.candidates[0].content.parts[0].inline_data.data):
+                    
+                    inline_data = chunk.candidates[0].content.parts[0].inline_data
+                    audio_data = inline_data.data
+                    mime_type = inline_data.mime_type
+                    
+                    # Convert to WAV format if needed
+                    if output_format.lower() == "wav":
+                        audio_data = convert_to_wav(audio_data, mime_type)
+                        file_extension = ".wav"
+                        final_mime_type = "audio/wav"
+                    else:
+                        file_extension = mimetypes.guess_extension(mime_type) or ".wav"
+                        final_mime_type = mime_type
+                    
+                    # Convert to base64 for storage/transmission
+                    base64_audio = base64.b64encode(audio_data).decode('utf-8')
+                    
+                    formatted_audio = {
+                        "audio_data": audio_data,
+                        "base64": base64_audio,
+                        "file_extension": file_extension,
+                        "mime_type": final_mime_type,
+                        "voice_name": voice_name,
+                        "temperature": temperature,
+                        "source": "gemini_tts",
+                        "model": "gemini-2.5-flash-preview-tts",
+                        "status": "success",
+                        "usage_rights": "Generated content - check Google usage policies",
+                        "media_type": "audio",
+                        "text": text,
+                        "file_id": f"gemini_tts_{file_index}",
+                        "duration_estimate": estimate_audio_duration(text)
+                    }
+                    
+                    audio_files.append(formatted_audio)
+                    file_index += 1
+        
+        except Exception as stream_error:
+            if "timeout" in str(stream_error).lower():
+                raise TimeoutError(f"Gemini TTS request timed out: {str(stream_error)}")
+            elif "network" in str(stream_error).lower() or "connection" in str(stream_error).lower():
+                raise NetworkError(f"Network error during TTS generation: {str(stream_error)}")
+            else:
+                raise APIError(f"Gemini TTS API error: {str(stream_error)}", api_name="Gemini")
         
         if not audio_files:
-            return {
-                "audio_files": [{
-                    "audio_data": b"",
-                    "base64": "",
-                    "error": "No audio generated by Gemini TTS",
-                    "source": "gemini_tts",
-                    "status": "error"
-                }],
-                "text": text,
-                "total_files": 0,
-                "source": "gemini_tts"
-            }
+            raise ProcessingError("No audio generated by Gemini TTS")
+        
+        logger.info(f"Successfully generated {len(audio_files)} audio files")
         
         return {
             "audio_files": audio_files,
@@ -174,20 +232,28 @@ def generate_speech_with_gemini(
         }
         
     except Exception as e:
-        error_audio = {
+        # Re-raise known exceptions
+        if isinstance(e, (APIError, NetworkError, TimeoutError, ProcessingError)):
+            raise
+        
+        # Handle unexpected errors
+        raise ProcessingError(f"Unexpected error in TTS generation: {str(e)}", original_exception=e)
+
+
+def _create_error_audio_response(text: str, error_message: str) -> Dict[str, Any]:
+    """Create a standardized error response for audio generation."""
+    return {
+        "audio_files": [{
             "audio_data": b"",
             "base64": "",
-            "error": f"Failed to generate speech with Gemini TTS: {str(e)}",
+            "error": error_message,
             "source": "gemini_tts",
             "status": "error"
-        }
-        
-        return {
-            "audio_files": [error_audio],
-            "text": text,
-            "total_files": 0,
-            "source": "gemini_tts"
-        }
+        }],
+        "text": text,
+        "total_files": 0,
+        "source": "gemini_tts"
+    }
 
 
 def convert_to_wav(audio_data: bytes, mime_type: str) -> bytes:
@@ -282,6 +348,35 @@ def estimate_audio_duration(text: str) -> float:
     duration_seconds = duration_minutes * 60.0
     
     return max(1.0, duration_seconds)  # Minimum 1 second
+
+
+def check_gemini_tts_health() -> Dict[str, Any]:
+    """Perform a health check on the Gemini TTS service."""
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return {
+            "status": "unhealthy",
+            "details": {"error": "API key not configured"}
+        }
+    
+    try:
+        # Perform a simple test TTS generation
+        test_result = generate_speech_with_gemini("test", "Charon", 1.0, "wav")
+        if test_result.get("total_files", 0) > 0:
+            return {
+                "status": "healthy",
+                "details": {"message": "Gemini TTS is responding normally"}
+            }
+        else:
+            return {
+                "status": "degraded",
+                "details": {"error": "Gemini TTS returned no audio files"}
+            }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "details": {"error": str(e)}
+        }
 
 
 # Create the tool function for ADK

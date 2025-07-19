@@ -1,6 +1,49 @@
 {
   "criteria": {
-    "tool_trajectory_avg_score": 0.09,
-    "response_match_score": 0.4
+    "tool_trajectory_avg_score": 0.7,
+    "response_match_score": 0.6,
+    "agent_coordination_score": 0.8,
+    "error_handling_score": 0.7,
+    "multi_modal_response_score": 0.6
+  },
+  "test_categories": {
+    "basic_video_generation": {
+      "description": "Tests basic video creation functionality",
+      "weight": 0.3
+    },
+    "different_durations": {
+      "description": "Tests video generation with various duration requirements",
+      "weight": 0.2
+    },
+    "different_styles": {
+      "description": "Tests different video styles (educational, professional, documentary, social media)",
+      "weight": 0.2
+    },
+    "edge_cases": {
+      "description": "Tests handling of niche topics, unclear requests, and error scenarios",
+      "weight": 0.15
+    },
+    "advanced_features": {
+      "description": "Tests multi-speaker, technical requirements, and language support",
+      "weight": 0.15
+    }
+  },
+  "evaluation_metrics": {
+    "agent_workflow_completion": {
+      "description": "Measures if the agent properly coordinates all sub-agents in sequence",
+      "target_score": 0.85
+    },
+    "requirement_coverage": {
+      "description": "Ensures all functional requirements are tested",
+      "target_score": 0.9
+    },
+    "error_recovery": {
+      "description": "Tests system resilience and error handling capabilities",
+      "target_score": 0.75
+    },
+    "user_experience": {
+      "description": "Evaluates clarity of responses and user interaction quality",
+      "target_score": 0.8
+    }
   }
 }

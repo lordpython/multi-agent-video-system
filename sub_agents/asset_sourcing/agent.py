@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Asset Sourcing Agent for finding and managing visual assets."""
+"""Asset Sourcing Agent for finding and managing visual assets with error handling."""
 
+from typing import Dict, Any
 from google.adk.agents import Agent
 from .prompts import return_instructions_asset_sourcing
 from .tools import (
@@ -21,8 +22,68 @@ from .tools import (
     unsplash_search_tool,
     pixabay_search_tool
 )
+from .tools.pexels_search import check_pexels_health
 
-# Asset Sourcing Agent with media API integration tools
+from video_system.shared_libraries import (
+    get_health_monitor,
+    get_logger,
+    ProcessingError,
+    log_error
+)
+
+# Configure logger for asset sourcing agent
+logger = get_logger("asset_sourcing_agent")
+
+# Health check functions for asset sourcing services
+def check_asset_sourcing_health() -> Dict[str, Any]:
+    """Perform a comprehensive health check on asset sourcing services."""
+    try:
+        # Check individual services
+        pexels_status = check_pexels_health()
+        
+        # For now, we'll focus on Pexels as the primary service
+        # Additional services (Unsplash, Pixabay) can be added similarly
+        
+        if pexels_status.get("status") == "healthy":
+            return {
+                "status": "healthy",
+                "details": {"message": "Asset sourcing services are operational"}
+            }
+        elif pexels_status.get("status") == "degraded":
+            return {
+                "status": "degraded",
+                "details": {"message": "Some asset sourcing services are experiencing issues"}
+            }
+        else:
+            return {
+                "status": "unhealthy",
+                "details": {"error": "Asset sourcing services are unavailable"}
+            }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "details": {"error": str(e)}
+        }
+
+# Register health checks for asset sourcing services
+health_monitor = get_health_monitor()
+health_monitor.service_registry.register_service(
+    service_name="pexels_api",
+    health_check_func=check_pexels_health,
+    health_check_interval=300,  # Check every 5 minutes
+    critical=True
+)
+
+health_monitor.service_registry.register_service(
+    service_name="asset_sourcing",
+    health_check_func=check_asset_sourcing_health,
+    health_check_interval=180,  # Check every 3 minutes
+    critical=True
+)
+
+logger.info("Asset sourcing agent initialized with health monitoring")
+
+# Asset Sourcing Agent with media API integration tools and error handling
 asset_sourcing_agent = Agent(
     model='gemini-2.5-flash',
     name='asset_sourcing_agent',

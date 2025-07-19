@@ -24,6 +24,20 @@ llama-index = "^0.12"
 python-dotenv = "^1.0.0"
 pydantic = "^2.0.0"
 ffmpeg-python = "^0.2.0"
+# Error handling and resilience dependencies
+psutil = "^6.1.0"
+tenacity = "^9.0.0"
+# Session management and persistence dependencies
+pymongo = "^4.6.0"
+motor = "^3.3.0"
+# Concurrent processing and performance monitoring dependencies
+aiofiles = "^24.1.0"
+asyncio-throttle = "^1.0.2"
+# CLI and API interface dependencies
+fastapi = "^0.115.0"
+uvicorn = "^0.32.0"
+click = "^8.1.0"
+rich = "^13.9.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
