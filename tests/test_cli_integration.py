@@ -29,7 +29,8 @@ from click.testing import CliRunner
 
 from video_system.cli import cli
 from video_system.shared_libraries.models import VideoGenerationRequest, VideoStatus
-from video_system.shared_libraries.session_manager import SessionManager, SessionStage
+from video_system.shared_libraries.adk_session_manager import VideoSystemSessionManager, get_session_manager
+from video_system.shared_libraries.adk_session_models import VideoGenerationStage as SessionStage
 
 
 @pytest.fixture

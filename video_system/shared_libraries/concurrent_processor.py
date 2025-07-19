@@ -32,7 +32,8 @@ import psutil
 import os
 
 from .models import VideoGenerationRequest, VideoStatus
-from .session_manager import get_session_manager, SessionStage
+from .adk_session_manager import get_session_manager
+from .adk_session_models import VideoGenerationStage as SessionStage
 from .error_handling import VideoSystemError, ProcessingError
 from .logging_config import get_logger
 

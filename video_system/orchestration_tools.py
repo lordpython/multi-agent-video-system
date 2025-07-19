@@ -17,6 +17,7 @@
 import json
 import logging
 import time
+import asyncio
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field
 
@@ -36,53 +37,44 @@ from .shared_libraries.models import (
     generate_session_id,
     create_video_status
 )
+from .shared_libraries.adk_session_manager import get_session_manager
+from .shared_libraries.adk_session_models import VideoGenerationState, VideoGenerationStage
 
 logger = logging.getLogger(__name__)
 
-# Session state management
-session_states: Dict[str, Dict[str, Any]] = {}
+
+async def get_session_state(session_id: str) -> Optional[VideoGenerationState]:
+    """Retrieve session state by ID using ADK SessionService."""
+    try:
+        session_manager = await get_session_manager()
+        return await session_manager.get_session_state(session_id)
+    except Exception as e:
+        logger.error(f"Failed to get session state {session_id}: {e}")
+        return None
 
 
-class SessionState(BaseModel):
-    """Model for managing session state throughout the video generation process."""
-    session_id: str
-    status: VideoGenerationStatus
-    request: VideoGenerationRequest
-    research_data: Optional[ResearchData] = None
-    script: Optional[VideoScript] = None
-    assets: Optional[AssetCollection] = None
-    audio_assets: Optional[AudioAssets] = None
-    final_video: Optional[FinalVideo] = None
-    error_log: List[str] = Field(default_factory=list)
-    retry_count: Dict[str, int] = Field(default_factory=dict)
-
-
-def get_session_state(session_id: str) -> Optional[SessionState]:
-    """Retrieve session state by ID."""
-    return session_states.get(session_id)
-
-
-def update_session_state(session_id: str, **updates) -> None:
-    """Update session state with new data."""
-    if session_id in session_states:
-        for key, value in updates.items():
-            if hasattr(session_states[session_id], key):
-                setattr(session_states[session_id], key, value)
-
-
-def create_session_state(request: VideoGenerationRequest) -> SessionState:
-    """Create a new session state for video generation."""
-    session_id = generate_session_id()
-    status = create_video_status(session_id, "processing")
+async def update_session_state(session_id: str, **updates) -> bool:
+    """Update session state with new data using ADK SessionService with proper event tracking.
     
-    state = SessionState(
-        session_id=session_id,
-        status=status,
-        request=request
-    )
-    
-    session_states[session_id] = state
-    return state
+    This function ensures all state updates go through ADK's append_event mechanism
+    for proper persistence and event tracking.
+    """
+    try:
+        session_manager = await get_session_manager()
+        return await session_manager.update_session_state(session_id, **updates)
+    except Exception as e:
+        logger.error(f"Failed to update session state {session_id}: {e}")
+        return False
+
+
+async def create_session_state(request: VideoGenerationRequest, user_id: Optional[str] = None) -> str:
+    """Create a new session state for video generation using ADK SessionService."""
+    try:
+        session_manager = await get_session_manager()
+        return await session_manager.create_session(request, user_id)
+    except Exception as e:
+        logger.error(f"Failed to create session state: {e}")
+        raise
 
 
 class CoordinateResearchInput(BaseModel):
@@ -99,16 +91,18 @@ class CoordinateResearchOutput(BaseModel):
     error_message: Optional[str] = None
 
 
-def coordinate_research(topic: str, session_id: str) -> Dict[str, Any]:
+async def coordinate_research(topic: str, session_id: str) -> Dict[str, Any]:
     """Coordinate research phase with the Research Agent."""
     try:
         logger.info(f"Starting research coordination for session {session_id}")
         
         # Update session status
-        session_state = get_session_state(session_id)
-        if session_state:
-            session_state.status.current_stage = "Research"
-            session_state.status.progress = 0.1
+        session_manager = await get_session_manager()
+        await session_manager.update_stage_and_progress(
+            session_id, 
+            VideoGenerationStage.RESEARCHING, 
+            0.1
+        )
         
         # Create research request
         research_request = ResearchRequest(
@@ -149,10 +143,14 @@ def coordinate_research(topic: str, session_id: str) -> Dict[str, Any]:
             context={"research_quality": "high", "topic": topic}
         )
         
-        # Update session state
-        if session_state:
-            session_state.research_data = research_data
-            session_state.status.progress = 0.2
+        # Update session state with research data using proper event tracking
+        await update_session_state(
+            session_id, 
+            research_data=research_data, 
+            progress=0.2,
+            last_updated_by="research_agent",
+            last_update_stage="research_completed"
+        )
         
         logger.info(f"Research coordination completed for session {session_id}")
         
@@ -167,11 +165,11 @@ def coordinate_research(topic: str, session_id: str) -> Dict[str, Any]:
         logger.error(f"Research coordination failed for session {session_id}: {str(e)}")
         
         # Update session with error
-        session_state = get_session_state(session_id)
-        if session_state:
-            session_state.error_log.append(f"Research failed: {str(e)}")
-            session_state.status.status = "failed"
-            session_state.status.error_message = str(e)
+        await session_manager.update_stage_and_progress(
+            session_id,
+            VideoGenerationStage.FAILED,
+            error_message=f"Research failed: {str(e)}"
+        )
         
         return {
             "research_data": None,
@@ -196,16 +194,18 @@ class CoordinateStoryOutput(BaseModel):
     error_message: Optional[str] = None
 
 
-def coordinate_story(research_data: Dict[str, Any], session_id: str, duration: int = 60) -> Dict[str, Any]:
+async def coordinate_story(research_data: Dict[str, Any], session_id: str, duration: int = 60) -> Dict[str, Any]:
     """Coordinate script creation with the Story Agent."""
     try:
         logger.info(f"Starting story coordination for session {session_id}")
         
         # Update session status
-        session_state = get_session_state(session_id)
-        if session_state:
-            session_state.status.current_stage = "Script Creation"
-            session_state.status.progress = 0.3
+        session_manager = await get_session_manager()
+        await session_manager.update_stage_and_progress(
+            session_id,
+            VideoGenerationStage.SCRIPTING,
+            0.3
+        )
         
         # Convert research data back to model
         research_obj = ResearchData(**research_data)
@@ -250,10 +250,14 @@ def coordinate_story(research_data: Dict[str, Any], session_id: str, duration: i
             metadata={"created_from_research": True, "target_duration": duration}
         )
         
-        # Update session state
-        if session_state:
-            session_state.script = script
-            session_state.status.progress = 0.4
+        # Update session state with script using proper event tracking
+        await update_session_state(
+            session_id, 
+            script=script, 
+            progress=0.4,
+            last_updated_by="story_agent",
+            last_update_stage="script_completed"
+        )
         
         logger.info(f"Story coordination completed for session {session_id}")
         
@@ -268,11 +272,11 @@ def coordinate_story(research_data: Dict[str, Any], session_id: str, duration: i
         logger.error(f"Story coordination failed for session {session_id}: {str(e)}")
         
         # Update session with error
-        session_state = get_session_state(session_id)
-        if session_state:
-            session_state.error_log.append(f"Story creation failed: {str(e)}")
-            session_state.status.status = "failed"
-            session_state.status.error_message = str(e)
+        await session_manager.update_stage_and_progress(
+            session_id,
+            VideoGenerationStage.FAILED,
+            error_message=f"Story creation failed: {str(e)}"
+        )
         
         return {
             "script": None,
@@ -296,16 +300,18 @@ class CoordinateAssetsOutput(BaseModel):
     error_message: Optional[str] = None
 
 
-def coordinate_assets(script: Dict[str, Any], session_id: str) -> Dict[str, Any]:
+async def coordinate_assets(script: Dict[str, Any], session_id: str) -> Dict[str, Any]:
     """Coordinate asset sourcing with both Asset Sourcing and Image Generation agents."""
     try:
         logger.info(f"Starting asset coordination for session {session_id}")
         
         # Update session status
-        session_state = get_session_state(session_id)
-        if session_state:
-            session_state.status.current_stage = "Asset Collection"
-            session_state.status.progress = 0.5
+        session_manager = await get_session_manager()
+        await session_manager.update_stage_and_progress(
+            session_id,
+            VideoGenerationStage.ASSET_SOURCING,
+            0.5
+        )
         
         # Convert script back to model
         script_obj = VideoScript(**script)
@@ -373,10 +379,14 @@ def coordinate_assets(script: Dict[str, Any], session_id: str) -> Dict[str, Any]
                 }
                 sourced_assets.images.append(generated_asset)
         
-        # Update session state
-        if session_state:
-            session_state.assets = sourced_assets
-            session_state.status.progress = 0.6
+        # Update session state with assets using proper event tracking
+        await update_session_state(
+            session_id, 
+            assets=sourced_assets, 
+            progress=0.6,
+            last_updated_by="asset_agent",
+            last_update_stage="assets_completed"
+        )
         
         logger.info(f"Asset coordination completed for session {session_id}")
         
@@ -391,11 +401,11 @@ def coordinate_assets(script: Dict[str, Any], session_id: str) -> Dict[str, Any]
         logger.error(f"Asset coordination failed for session {session_id}: {str(e)}")
         
         # Update session with error
-        session_state = get_session_state(session_id)
-        if session_state:
-            session_state.error_log.append(f"Asset coordination failed: {str(e)}")
-            session_state.status.status = "failed"
-            session_state.status.error_message = str(e)
+        await session_manager.update_stage_and_progress(
+            session_id,
+            VideoGenerationStage.FAILED,
+            error_message=f"Asset coordination failed: {str(e)}"
+        )
         
         return {
             "assets": None,
@@ -419,16 +429,18 @@ class CoordinateAudioOutput(BaseModel):
     error_message: Optional[str] = None
 
 
-def coordinate_audio(script: Dict[str, Any], session_id: str) -> Dict[str, Any]:
+async def coordinate_audio(script: Dict[str, Any], session_id: str) -> Dict[str, Any]:
     """Coordinate audio generation with the Audio Agent."""
     try:
         logger.info(f"Starting audio coordination for session {session_id}")
         
         # Update session status
-        session_state = get_session_state(session_id)
-        if session_state:
-            session_state.status.current_stage = "Audio Generation"
-            session_state.status.progress = 0.7
+        session_manager = await get_session_manager()
+        await session_manager.update_stage_and_progress(
+            session_id,
+            VideoGenerationStage.AUDIO_GENERATION,
+            0.7
+        )
         
         # Convert script back to model
         script_obj = VideoScript(**script)
@@ -460,10 +472,14 @@ def coordinate_audio(script: Dict[str, Any], session_id: str) -> Dict[str, Any]:
             ]
         )
         
-        # Update session state
-        if session_state:
-            session_state.audio_assets = audio_assets
-            session_state.status.progress = 0.8
+        # Update session state with audio assets using proper event tracking
+        await update_session_state(
+            session_id, 
+            audio_assets=audio_assets, 
+            progress=0.8,
+            last_updated_by="audio_agent",
+            last_update_stage="audio_completed"
+        )
         
         logger.info(f"Audio coordination completed for session {session_id}")
         
@@ -478,11 +494,11 @@ def coordinate_audio(script: Dict[str, Any], session_id: str) -> Dict[str, Any]:
         logger.error(f"Audio coordination failed for session {session_id}: {str(e)}")
         
         # Update session with error
-        session_state = get_session_state(session_id)
-        if session_state:
-            session_state.error_log.append(f"Audio generation failed: {str(e)}")
-            session_state.status.status = "failed"
-            session_state.status.error_message = str(e)
+        await session_manager.update_stage_and_progress(
+            session_id,
+            VideoGenerationStage.FAILED,
+            error_message=f"Audio generation failed: {str(e)}"
+        )
         
         return {
             "audio_assets": None,
@@ -508,17 +524,19 @@ class CoordinateAssemblyOutput(BaseModel):
     error_message: Optional[str] = None
 
 
-def coordinate_assembly(script: Dict[str, Any], assets: Dict[str, Any], 
+async def coordinate_assembly(script: Dict[str, Any], assets: Dict[str, Any], 
                       audio_assets: Dict[str, Any], session_id: str) -> Dict[str, Any]:
     """Coordinate final video assembly with the Video Assembly Agent."""
     try:
         logger.info(f"Starting video assembly coordination for session {session_id}")
         
         # Update session status
-        session_state = get_session_state(session_id)
-        if session_state:
-            session_state.status.current_stage = "Video Assembly"
-            session_state.status.progress = 0.9
+        session_manager = await get_session_manager()
+        await session_manager.update_stage_and_progress(
+            session_id,
+            VideoGenerationStage.VIDEO_ASSEMBLY,
+            0.9
+        )
         
         # Convert models back
         script_obj = VideoScript(**script)
@@ -556,12 +574,18 @@ def coordinate_assembly(script: Dict[str, Any], assets: Dict[str, Any],
             }
         )
         
-        # Update session state
-        if session_state:
-            session_state.final_video = final_video
-            session_state.status.progress = 1.0
-            session_state.status.status = "completed"
-            session_state.status.current_stage = "Completed"
+        # Update session state with final video using proper event tracking
+        await update_session_state(
+            session_id, 
+            final_video=final_video,
+            last_updated_by="assembly_agent",
+            last_update_stage="assembly_completed"
+        )
+        await session_manager.update_stage_and_progress(
+            session_id,
+            VideoGenerationStage.COMPLETED,
+            1.0
+        )
         
         logger.info(f"Video assembly coordination completed for session {session_id}")
         
@@ -576,11 +600,11 @@ def coordinate_assembly(script: Dict[str, Any], assets: Dict[str, Any],
         logger.error(f"Video assembly coordination failed for session {session_id}: {str(e)}")
         
         # Update session with error
-        session_state = get_session_state(session_id)
-        if session_state:
-            session_state.error_log.append(f"Video assembly failed: {str(e)}")
-            session_state.status.status = "failed"
-            session_state.status.error_message = str(e)
+        await session_manager.update_stage_and_progress(
+            session_id,
+            VideoGenerationStage.FAILED,
+            error_message=f"Video assembly failed: {str(e)}"
+        )
         
         return {
             "final_video": None,
@@ -602,11 +626,13 @@ class GetSessionStatusOutput(BaseModel):
     error_message: Optional[str] = None
 
 
-def get_session_status(session_id: str) -> Dict[str, Any]:
+async def get_session_status(session_id: str) -> Dict[str, Any]:
     """Get the current status of a video generation session."""
     try:
-        session_state = get_session_state(session_id)
-        if not session_state:
+        session_manager = await get_session_manager()
+        status = await session_manager.get_session_status(session_id)
+        
+        if not status:
             return {
                 "status": None,
                 "success": False,
@@ -614,7 +640,7 @@ def get_session_status(session_id: str) -> Dict[str, Any]:
             }
         
         return {
-            "status": session_state.status.model_dump(),
+            "status": status.model_dump(),
             "success": True,
             "error_message": None
         }
@@ -642,27 +668,39 @@ def retry_with_backoff(func, max_retries: int = 3, backoff_factor: float = 2.0):
             time.sleep(wait_time)
 
 
-def handle_agent_error(session_id: str, stage: str, error: Exception) -> None:
+async def handle_agent_error(session_id: str, stage: str, error: Exception) -> None:
     """Handle errors from sub-agents with appropriate recovery strategies."""
-    session_state = get_session_state(session_id)
-    if not session_state:
-        return
+    try:
+        session_manager = await get_session_manager()
+        session_state = await session_manager.get_session_state(session_id)
+        
+        if not session_state:
+            return
+        
+        error_msg = f"{stage} failed: {str(error)}"
+        session_state.add_error(error_msg, stage)
+        
+        # If we've exceeded max retries, mark as failed
+        if session_state.retry_count.get(stage, 0) >= 3:
+            await session_manager.update_stage_and_progress(
+                session_id,
+                VideoGenerationStage.FAILED,
+                error_message=f"Max retries exceeded for {stage}"
+            )
+            logger.error(f"Session {session_id} failed at {stage} after 3 retries")
+        else:
+            # Update session state with error info using proper event tracking
+            await update_session_state(
+                session_id,
+                error_log=session_state.error_log,
+                retry_count=session_state.retry_count,
+                last_updated_by="error_handler",
+                last_update_stage=f"error_recovery_{stage}"
+            )
+            logger.warning(f"Session {session_id} error at {stage}, retry {session_state.retry_count[stage]}/3")
     
-    error_msg = f"{stage} failed: {str(error)}"
-    session_state.error_log.append(error_msg)
-    
-    # Increment retry count for this stage
-    if stage not in session_state.retry_count:
-        session_state.retry_count[stage] = 0
-    session_state.retry_count[stage] += 1
-    
-    # If we've exceeded max retries, mark as failed
-    if session_state.retry_count[stage] >= 3:
-        session_state.status.status = "failed"
-        session_state.status.error_message = f"Max retries exceeded for {stage}"
-        logger.error(f"Session {session_id} failed at {stage} after 3 retries")
-    else:
-        logger.warning(f"Session {session_id} error at {stage}, retry {session_state.retry_count[stage]}/3")
+    except Exception as e:
+        logger.error(f"Failed to handle agent error for session {session_id}: {e}")
 
 
 # Export all orchestration tools as simple functions

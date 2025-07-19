@@ -30,7 +30,8 @@ from unittest.mock import Mock, patch, AsyncMock
 from fastapi.testclient import TestClient
 from video_system.api import app
 from video_system.shared_libraries.models import VideoGenerationRequest, VideoStatus
-from video_system.shared_libraries.session_manager import SessionManager, SessionStage
+from video_system.shared_libraries.adk_session_manager import VideoSystemSessionManager, get_session_manager
+from video_system.shared_libraries.adk_session_models import VideoGenerationStage as SessionStage
 
 
 @pytest.fixture

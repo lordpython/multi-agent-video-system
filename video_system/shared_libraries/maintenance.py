@@ -29,7 +29,7 @@ from dataclasses import dataclass
 import psutil
 import logging
 
-from .session_manager import SessionManager, get_session_manager
+from .adk_session_manager import VideoSystemSessionManager, get_session_manager
 from .models import VideoStatus
 from .logging_config import get_logger
 
@@ -66,7 +66,7 @@ class SystemHealth:
 class MaintenanceManager:
     """Manages cleanup and maintenance operations for the video system."""
     
-    def __init__(self, session_manager: Optional[SessionManager] = None,
+    def __init__(self, session_manager: Optional[VideoSystemSessionManager] = None,
                  temp_dir: Optional[str] = None,
                  max_disk_usage: float = 85.0,
                  max_memory_usage: float = 90.0):
@@ -550,7 +550,7 @@ def get_maintenance_manager() -> MaintenanceManager:
     return _maintenance_manager
 
 
-def initialize_maintenance_manager(session_manager: Optional[SessionManager] = None,
+def initialize_maintenance_manager(session_manager: Optional[VideoSystemSessionManager] = None,
                                  temp_dir: Optional[str] = None,
                                  **kwargs) -> MaintenanceManager:
     """Initialize the global maintenance manager."""

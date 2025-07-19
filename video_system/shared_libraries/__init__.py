@@ -105,13 +105,16 @@ from .config_manager import (
     initialize_configuration,
 )
 
-from .session_manager import (
-    SessionManager,
-    SessionData,
-    ProjectState,
-    SessionStage,
+from .adk_session_manager import (
+    VideoSystemSessionManager,
     get_session_manager,
     initialize_session_manager,
+)
+
+from .adk_session_models import (
+    VideoGenerationState,
+    VideoGenerationStage,
+    SessionMetadata,
 )
 
 from .progress_monitor import (

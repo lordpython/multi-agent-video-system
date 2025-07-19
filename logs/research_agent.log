@@ -1,2 +1,0 @@
-{"timestamp": "2025-07-19T00:45:54.594354Z", "level": "INFO", "logger": "video_system.research_agent", "message": "Research agent initialized with health monitoring", "module": "agent", "function": "<module>", "line": 40, "extra": {"taskName": null}}
-{"timestamp": "2025-07-19T00:47:36.289862Z", "level": "INFO", "logger": "video_system.research_agent", "message": "Research agent initialized with health monitoring", "module": "agent", "function": "<module>", "line": 40, "extra": {"taskName": null}}

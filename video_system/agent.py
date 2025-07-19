@@ -26,6 +26,7 @@ from .orchestration_tools import (
     create_session_state,
     get_session_state
 )
+from .shared_libraries.adk_session_manager import get_session_manager
 from .shared_libraries.models import (
     VideoGenerationRequest as VideoRequest,
     create_default_video_request
@@ -62,14 +63,15 @@ class StartVideoGenerationOutput(BaseModel):
 
 
 @with_resource_check
-def start_video_generation(
+async def start_video_generation(
     prompt: str,
     duration_preference: int = 60,
     style: str = "professional",
     voice_preference: str = "neutral",
-    quality: str = "high"
+    quality: str = "high",
+    user_id: str = "default"
 ) -> Dict[str, Any]:
-    """Start the complete video generation workflow with comprehensive error handling."""
+    """Start the complete video generation workflow with comprehensive error handling using ADK sessions."""
     try:
         # Input validation
         if not isinstance(prompt, str) or not prompt.strip():
@@ -105,15 +107,17 @@ def start_video_generation(
             quality=quality
         )
         
-        # Create session state
-        session_state = create_session_state(request)
-        session_id = session_state.session_id
+        # Create session state using async ADK SessionService
+        session_id = await create_session_state(request, user_id)
+        
+        # Get session state to return status
+        session_state = await get_session_state(session_id)
         
         logger.info(f"Created session {session_id} for video generation")
         
         return {
             "session_id": session_id,
-            "status": session_state.status.model_dump(),
+            "status": session_state.model_dump() if session_state else {"stage": "initializing"},
             "success": True,
             "error_message": None
         }
@@ -141,12 +145,13 @@ class ExecuteWorkflowOutput(BaseModel):
     error_message: Optional[str] = None
 
 
-def execute_complete_workflow(session_id: str) -> Dict[str, Any]:
-    """Execute the complete video generation workflow for a session."""
+async def execute_complete_workflow(session_id: str, user_id: str = "default") -> Dict[str, Any]:
+    """Execute the complete video generation workflow for a session using ADK sessions."""
     try:
         logger.info(f"Executing complete workflow for session {session_id}")
         
-        session_state = get_session_state(session_id)
+        # Get session state using ADK SessionService
+        session_state = await get_session_state(session_id)
         if not session_state:
             return {
                 "final_video_path": None,
@@ -155,15 +160,22 @@ def execute_complete_workflow(session_id: str) -> Dict[str, Any]:
                 "error_message": f"Session {session_id} not found"
             }
         
-        # This would typically be handled by the orchestrator calling each tool in sequence
-        # For now, we'll return a success message indicating the workflow is ready
-        logger.info(f"Workflow ready for session {session_id}. Use individual coordination tools to proceed.")
+        # Update session to processing using ADK event tracking
+        from .shared_libraries.adk_session_models import VideoGenerationStage
+        session_manager = await get_session_manager()
+        await session_manager.update_stage_and_progress(
+            session_id,
+            VideoGenerationStage.RESEARCHING,
+            0.1
+        )
+        
+        logger.info(f"Started workflow execution for session {session_id}")
         
         return {
             "final_video_path": None,
             "session_id": session_id,
             "success": True,
-            "error_message": "Workflow initialized. Use coordinate_research, coordinate_story, coordinate_assets, coordinate_audio, and coordinate_assembly tools in sequence."
+            "error_message": "Workflow started successfully. Use coordinate_research, coordinate_story, coordinate_assets, coordinate_audio, and coordinate_assembly tools in sequence."
         }
         
     except Exception as e:

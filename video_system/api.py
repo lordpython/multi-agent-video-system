@@ -33,7 +33,8 @@ from dotenv import load_dotenv
 from .shared_libraries.models import (
     VideoGenerationRequest, VideoGenerationStatus, VideoStatus
 )
-from .shared_libraries.session_manager import get_session_manager, SessionStage
+from .shared_libraries.adk_session_manager import get_session_manager
+from .shared_libraries.adk_session_models import VideoGenerationStage
 from .shared_libraries.progress_monitor import get_progress_monitor
 from .agent import initialize_video_system, check_orchestrator_health
 from .shared_libraries.logging_config import get_logger
@@ -181,9 +182,21 @@ async def generate_video(request: VideoGenerationRequestAPI, background_tasks: B
             quality=request.quality
         )
         
-        # Create session
-        session_manager = get_session_manager()
-        session_id = session_manager.create_session(video_request, request.user_id)
+        # Use the agent function to create session and start generation
+        from .agent import start_video_generation
+        result = await start_video_generation(
+            prompt=video_request.prompt,
+            duration_preference=video_request.duration_preference,
+            style=video_request.style,
+            voice_preference=video_request.voice_preference,
+            quality=video_request.quality,
+            user_id=request.user_id or "default"
+        )
+        
+        if not result.get('success'):
+            raise HTTPException(status_code=400, detail=result.get('error_message', 'Failed to start video generation'))
+        
+        session_id = result['session_id']
         
         # Start progress monitoring
         progress_monitor = get_progress_monitor()
@@ -192,14 +205,16 @@ async def generate_video(request: VideoGenerationRequestAPI, background_tasks: B
         # Start background processing
         background_tasks.add_task(_process_video_generation, session_id)
         
-        session = session_manager.get_session(session_id)
+        # Get session status
+        session_manager = await get_session_manager()
+        session_status = await session_manager.get_session_status(session_id)
         
         return VideoGenerationResponseAPI(
             session_id=session_id,
-            status=session.status.value,
+            status=session_status.status if session_status else "queued",
             message="Video generation started successfully",
-            created_at=session.created_at,
-            estimated_completion=session.estimated_completion
+            created_at=datetime.now(timezone.utc),
+            estimated_completion=None
         )
         
     except ValueError as e:
@@ -214,22 +229,24 @@ async def generate_video(request: VideoGenerationRequestAPI, background_tasks: B
 async def get_video_status(session_id: str = PathParam(..., description="Session ID")):
     """Get the status of a video generation session."""
     try:
-        session_manager = get_session_manager()
-        session = session_manager.get_session(session_id)
+        session_manager = await get_session_manager()
+        state = await session_manager.get_session_state(session_id)
         
-        if not session:
+        if not state:
             raise HTTPException(status_code=404, detail="Session not found")
+        
+        status_value = "completed" if state.is_completed() else "failed" if state.is_failed() else "processing"
         
         return SessionStatusResponseAPI(
             session_id=session_id,
-            status=session.status.value,
-            stage=session.stage.value,
-            progress=session.progress,
-            created_at=session.created_at,
-            updated_at=session.updated_at,
-            estimated_completion=session.estimated_completion,
-            error_message=session.error_message,
-            request_details=session.request.model_dump()
+            status=status_value,
+            stage=state.current_stage.value,
+            progress=state.progress,
+            created_at=state.created_at,
+            updated_at=state.updated_at,
+            estimated_completion=state.estimated_completion,
+            error_message=state.error_message,
+            request_details=state.request.model_dump()
         )
         
     except HTTPException:
@@ -262,21 +279,20 @@ async def get_video_progress(session_id: str = PathParam(..., description="Sessi
 async def download_video(session_id: str = PathParam(..., description="Session ID")):
     """Download the generated video file."""
     try:
-        session_manager = get_session_manager()
-        session = session_manager.get_session(session_id)
+        session_manager = await get_session_manager()
+        state = await session_manager.get_session_state(session_id)
         
-        if not session:
+        if not state:
             raise HTTPException(status_code=404, detail="Session not found")
         
-        if session.status != VideoStatus.COMPLETED:
+        if not state.is_completed():
             raise HTTPException(status_code=400, detail="Video generation not completed")
         
-        # Get project state to find video file
-        project_state = session_manager.get_project_state(session_id)
-        if not project_state or not project_state.final_video:
+        # Get final video file
+        if not state.final_video:
             raise HTTPException(status_code=404, detail="Video file not found")
         
-        video_path = Path(project_state.final_video.file_path)
+        video_path = Path(state.final_video.file_path)
         if not video_path.exists():
             raise HTTPException(status_code=404, detail="Video file not found on disk")
         
@@ -297,16 +313,16 @@ async def download_video(session_id: str = PathParam(..., description="Session I
 async def cancel_video_generation(session_id: str = PathParam(..., description="Session ID")):
     """Cancel a video generation session."""
     try:
-        session_manager = get_session_manager()
-        session = session_manager.get_session(session_id)
+        session_manager = await get_session_manager()
+        state = await session_manager.get_session_state(session_id)
         
-        if not session:
+        if not state:
             raise HTTPException(status_code=404, detail="Session not found")
         
         # Update session status to cancelled
-        success = session_manager.update_session_status(
+        success = await session_manager.update_stage_and_progress(
             session_id,
-            VideoStatus.CANCELLED,
+            VideoGenerationStage.FAILED,
             error_message="Cancelled by user request"
         )
         
@@ -329,51 +345,46 @@ async def cancel_video_generation(session_id: str = PathParam(..., description="
 @app.get("/videos", response_model=SessionListResponseAPI)
 async def list_video_sessions(
     user_id: Optional[str] = Query(None, description="Filter by user ID"),
-    status: Optional[str] = Query(None, description="Filter by status"),
+    status: Optional[str] = Query(None, description="Filter by status (completed, failed, processing, queued)"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Page size")
 ):
     """List video generation sessions with optional filtering and pagination."""
     try:
-        session_manager = get_session_manager()
+        session_manager = await get_session_manager()
         
-        # Convert status string to enum if provided
-        status_filter = None
-        if status:
-            try:
-                status_filter = VideoStatus(status.lower())
-            except ValueError:
-                raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
+        # Use the new paginated listing functionality
+        result = await session_manager.list_sessions_paginated(
+            user_id=user_id,
+            page=page,
+            page_size=page_size,
+            status_filter=status
+        )
         
-        # Get sessions with filtering
-        all_sessions = session_manager.list_sessions(user_id=user_id, status=status_filter)
-        
-        # Apply pagination
-        total_count = len(all_sessions)
-        start_idx = (page - 1) * page_size
-        end_idx = start_idx + page_size
-        sessions = all_sessions[start_idx:end_idx]
+        sessions = result["sessions"]
+        pagination = result["pagination"]
         
         # Convert to API response format
         session_responses = []
-        for session in sessions:
+        for state in sessions:
+            status_value = "completed" if state.is_completed() else "failed" if state.is_failed() else "processing"
             session_responses.append(SessionStatusResponseAPI(
-                session_id=session.session_id,
-                status=session.status.value,
-                stage=session.stage.value,
-                progress=session.progress,
-                created_at=session.created_at,
-                updated_at=session.updated_at,
-                estimated_completion=session.estimated_completion,
-                error_message=session.error_message,
-                request_details=session.request.model_dump()
+                session_id=state.session_id,
+                status=status_value,
+                stage=state.current_stage.value,
+                progress=state.progress,
+                created_at=state.created_at,
+                updated_at=state.updated_at,
+                estimated_completion=state.estimated_completion,
+                error_message=state.error_message,
+                request_details=state.request.model_dump()
             ))
         
         return SessionListResponseAPI(
             sessions=session_responses,
-            total_count=total_count,
-            page=page,
-            page_size=page_size
+            total_count=pagination["total_count"],
+            page=pagination["page"],
+            page_size=pagination["page_size"]
         )
         
     except HTTPException:
@@ -387,16 +398,16 @@ async def list_video_sessions(
 async def get_system_stats():
     """Get system statistics and health information."""
     try:
-        session_manager = get_session_manager()
-        stats = session_manager.get_statistics()
+        session_manager = await get_session_manager()
+        stats = await session_manager.get_statistics()
         health = check_orchestrator_health()
         
         return SystemStatsResponseAPI(
-            total_sessions=stats['total_sessions'],
-            active_sessions=stats['active_sessions'],
-            status_distribution=stats['status_distribution'],
-            stage_distribution=stats['stage_distribution'],
-            average_progress=stats['average_progress'],
+            total_sessions=stats.total_sessions,
+            active_sessions=stats.active_sessions,
+            status_distribution={"completed": stats.completed_sessions, "failed": stats.failed_sessions, "active": stats.active_sessions},
+            stage_distribution={},  # Not available in new model
+            average_progress=0.0,  # Not available in new model
             system_health=health
         )
         
@@ -424,7 +435,11 @@ async def health_check():
             details=health.get("details", {})
         )
         
-        return JSONResponse(content=response.model_dump(), status_code=status_code)
+        # Convert to dict with proper datetime serialization
+        response_dict = response.model_dump()
+        response_dict["timestamp"] = response.timestamp.isoformat()
+        
+        return JSONResponse(content=response_dict, status_code=status_code)
         
     except Exception as e:
         logger.error(f"Health check failed: {e}")
@@ -442,8 +457,8 @@ async def health_check():
 async def cleanup_sessions(max_age_hours: int = Query(24, ge=1, description="Maximum age in hours")):
     """Clean up old and completed sessions."""
     try:
-        session_manager = get_session_manager()
-        cleaned_count = session_manager.cleanup_expired_sessions(max_age_hours)
+        session_manager = await get_session_manager()
+        cleaned_count = await session_manager.cleanup_expired_sessions()
         
         return {
             "message": f"Cleaned up {cleaned_count} expired sessions",
@@ -463,26 +478,32 @@ async def _process_video_generation(session_id: str):
     try:
         logger.info(f"Starting background video generation for session {session_id}")
         
-        session_manager = get_session_manager()
-        progress_monitor = get_progress_monitor()
+        # Use the agent function to execute the workflow
+        from .agent import execute_complete_workflow
+        workflow_result = await execute_complete_workflow(session_id)
         
-        # Update status to processing
-        session_manager.update_session_status(session_id, VideoStatus.PROCESSING)
+        if not workflow_result.get('success'):
+            logger.error(f"Workflow execution failed: {workflow_result.get('error_message')}")
+            return
+        
+        session_manager = await get_session_manager()
+        progress_monitor = get_progress_monitor()
         
         # Simulate the video generation workflow
         # In a real implementation, this would call the actual agent coordination tools
         
         stages = [
-            (SessionStage.RESEARCHING, 15),
-            (SessionStage.SCRIPTING, 20),
-            (SessionStage.ASSET_SOURCING, 25),
-            (SessionStage.AUDIO_GENERATION, 20),
-            (SessionStage.VIDEO_ASSEMBLY, 15),
-            (SessionStage.FINALIZING, 5)
+            (VideoGenerationStage.RESEARCHING, 15),
+            (VideoGenerationStage.SCRIPTING, 20),
+            (VideoGenerationStage.ASSET_SOURCING, 25),
+            (VideoGenerationStage.AUDIO_GENERATION, 20),
+            (VideoGenerationStage.VIDEO_ASSEMBLY, 15),
+            (VideoGenerationStage.FINALIZING, 5)
         ]
         
         for stage, duration in stages:
             # Advance to stage
+            await session_manager.update_stage_and_progress(session_id, stage, 0.0)
             progress_monitor.advance_to_stage(session_id, stage)
             
             # Simulate processing with progress updates
@@ -492,6 +513,7 @@ async def _process_video_generation(session_id: str):
                 progress_monitor.update_stage_progress(session_id, stage, progress)
         
         # Complete the session
+        await session_manager.update_stage_and_progress(session_id, VideoGenerationStage.COMPLETED, 1.0)
         progress_monitor.complete_session(session_id, success=True)
         
         logger.info(f"Completed video generation for session {session_id}")
@@ -500,12 +522,12 @@ async def _process_video_generation(session_id: str):
         logger.error(f"Error in background video generation for session {session_id}: {e}")
         
         # Mark session as failed
-        session_manager = get_session_manager()
+        session_manager = await get_session_manager()
         progress_monitor = get_progress_monitor()
         
-        session_manager.update_session_status(
+        await session_manager.update_stage_and_progress(
             session_id,
-            VideoStatus.FAILED,
+            VideoGenerationStage.FAILED,
             error_message=str(e)
         )
         progress_monitor.complete_session(session_id, success=False, error_message=str(e))
