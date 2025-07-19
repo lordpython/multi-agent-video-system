@@ -443,7 +443,7 @@ class HealthMonitor:
             "degradation_level": self.degradation.current_level
         }
         
-        self.logger.info(f"System health summary: {json.dumps(health_summary, indent=2)}")
+        self.logger.info(f"System health summary: {json.dumps(health_summary, indent=2, default=str)}")
     
     def get_system_status(self) -> Dict[str, Any]:
         """Get comprehensive system status."""
