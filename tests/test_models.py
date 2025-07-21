@@ -28,7 +28,6 @@ from video_system.shared_libraries.models import (
     VideoStyle,
     ResearchRequest,
     ResearchData,
-    ScriptRequest,
     AssetRequest,
     AssetCollection,
     AudioRequest,

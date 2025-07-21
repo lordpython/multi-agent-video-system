@@ -467,7 +467,7 @@ class TestAssetSourcingAgent:
     def test_asset_sourcing_agent_initialization(self):
         """Test that the asset sourcing agent is properly initialized."""
         assert asset_sourcing_agent.name == "asset_sourcing_agent"
-        assert asset_sourcing_agent.model == "gemini-2.5-flash"
+        assert asset_sourcing_agent.model == "gemini-2.5-pro"
         assert len(asset_sourcing_agent.tools) == 3
         
         # Check tool functions

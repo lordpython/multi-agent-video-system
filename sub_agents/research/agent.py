@@ -14,15 +14,13 @@
 
 """Research Agent for gathering information and context for video content with error handling."""
 
-from google.adk.agents import Agent
+from google.adk.agents import LlmAgent
 from .prompts import return_instructions_research
 from .tools.web_search import serper_web_search_tool, check_serper_health
 
 from video_system.shared_libraries import (
     get_health_monitor,
-    get_logger,
-    ProcessingError,
-    log_error
+    get_logger
 )
 
 # Configure logger for research agent
@@ -40,9 +38,10 @@ health_monitor.service_registry.register_service(
 logger.info("Research agent initialized with health monitoring")
 
 # Research Agent with web search capabilities and error handling
-research_agent = Agent(
-    model='gemini-2.5-flash',
+research_agent = LlmAgent(
+    model='gemini-2.5-pro',
     name='research_agent',
+    description='Performs web searches to gather information and context for video content.',
     instruction=return_instructions_research(),
     tools=[serper_web_search_tool]
 )

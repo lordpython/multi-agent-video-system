@@ -14,16 +14,14 @@
 
 """Tests for concurrent processing and resource management functionality."""
 
-import asyncio
 import pytest
 import time
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, MagicMock
+from datetime import datetime
+from unittest.mock import Mock, patch
 
 from video_system.shared_libraries import (
     ConcurrentProcessor,
     ResourceManager,
-    LoadTester,
     VideoGenerationRequest,
     RequestPriority,
     ProcessorStatus,
@@ -31,15 +29,10 @@ from video_system.shared_libraries import (
     ResourceThresholds,
     LoadTestConfig,
     LoadTestType,
-    get_concurrent_processor,
-    get_resource_manager,
     get_load_tester,
     initialize_concurrent_processor,
     initialize_resource_manager,
-    get_new_rate_limiter,
-    initialize_rate_limiter,
-    RateLimitConfig,
-    ServiceLimits
+    initialize_rate_limiter
 )
 
 

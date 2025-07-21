@@ -19,13 +19,10 @@ This script demonstrates the functionality of both the command-line interface
 and the REST API for video generation.
 """
 
-import asyncio
 import json
 import requests
 import subprocess
 import sys
-import time
-from pathlib import Path
 
 def demo_cli_interface():
     """Demonstrate CLI interface functionality."""
@@ -122,7 +119,7 @@ def demo_api_interface():
             print(f"Response: {json.dumps(response.json(), indent=2)}")
             
             # Get detailed progress
-            print(f"\n5. Detailed Progress:")
+            print("\n5. Detailed Progress:")
             response = requests.get(f"{base_url}/videos/{session_id}/progress")
             print(f"Status: {response.status_code}")
             if response.status_code == 200:

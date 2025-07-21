@@ -15,25 +15,20 @@
 
 """Configuration setup and validation utility for the multi-agent video system."""
 
-import os
 import sys
 import argparse
 import shutil
 from pathlib import Path
-from typing import Dict, List, Optional
-import subprocess
+from typing import Dict, List
 
 # Add the project root to Python path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 from video_system.shared_libraries.config_manager import (
-    ConfigurationManager,
     get_config_manager,
-    validate_system_configuration,
-    initialize_configuration
+    validate_system_configuration
 )
-from video_system.shared_libraries.error_handling import ConfigurationError
 
 
 class ConfigurationSetup:

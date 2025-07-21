@@ -21,17 +21,13 @@ and automatic resource management to ensure system stability under load.
 import threading
 import time
 import psutil
-import os
 import gc
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Callable, Any, Tuple
 from enum import Enum
-import json
-from pathlib import Path
 
 from .logging_config import get_logger
-from .error_handling import VideoSystemError
 
 logger = get_logger(__name__)
 

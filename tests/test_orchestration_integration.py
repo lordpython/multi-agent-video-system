@@ -15,10 +15,7 @@
 """Integration tests for agent orchestration and coordination."""
 
 import pytest
-import asyncio
-import json
-from unittest.mock import Mock, patch, MagicMock
-from typing import Dict, Any
+from unittest.mock import patch
 
 from video_system.orchestration_tools import (
     coordinate_research,
@@ -40,8 +37,7 @@ from video_system.shared_libraries.models import (
     VideoScene,
     AssetCollection,
     AssetItem,
-    AudioAssets,
-    FinalVideo
+    AudioAssets
 )
 from video_system.agent import root_agent
 
@@ -472,7 +468,7 @@ class TestRootAgentIntegration:
     
     def test_agent_model_and_name(self):
         """Test root agent configuration."""
-        assert root_agent.model == 'gemini-2.5-flash'
+        assert root_agent.model == 'gemini-2.5-pro'
         assert root_agent.name == 'video_system_orchestrator'
         assert root_agent.instruction is not None
         assert len(root_agent.instruction) > 100  # Should have substantial instructions

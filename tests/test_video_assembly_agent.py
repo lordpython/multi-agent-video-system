@@ -18,7 +18,7 @@ import pytest
 import os
 import tempfile
 import shutil
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from sub_agents.video_assembly.agent import video_assembly_agent
 from sub_agents.video_assembly.tools.ffmpeg_composition import (
     compose_video_with_ffmpeg,
@@ -70,7 +70,7 @@ class TestVideoAssemblyAgent:
         """Test that the video assembly agent is properly initialized."""
         assert video_assembly_agent is not None
         assert video_assembly_agent.name == 'video_assembly_agent'
-        assert video_assembly_agent.model == 'gemini-2.5-flash'
+        assert video_assembly_agent.model == 'gemini-2.5-pro'
         assert len(video_assembly_agent.tools) == 4
         
         # Check that all required tools are present (tools are functions)

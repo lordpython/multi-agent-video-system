@@ -114,7 +114,7 @@ async def demo_concurrent_processing():
         
         # Final metrics
         final_metrics = processor.get_metrics()
-        print(f"\nFinal Metrics:")
+        print("\nFinal Metrics:")
         print(f"  Total Requests Queued: {final_metrics.total_requests_queued}")
         print(f"  Total Requests Processed: {final_metrics.total_requests_processed}")
         print(f"  Total Requests Failed: {final_metrics.total_requests_failed}")
@@ -209,7 +209,7 @@ async def demo_resource_management():
         print(f"  Objects collected: {gc_results['objects_collected']}")
         
         # Clean up allocation
-        print(f"\nDeallocating resources...")
+        print("\nDeallocating resources...")
         resource_manager.deallocate_resources(allocation_id)
         print("  ✓ Resources deallocated")
         
@@ -345,7 +345,7 @@ async def demo_load_testing():
         duration = (end_time - start_time).total_seconds()
         
         # Display results
-        print(f"\nLoad Test Results:")
+        print("\nLoad Test Results:")
         print(f"  Test Status: {metrics.phase.value}")
         print(f"  Actual Duration: {duration:.1f}s")
         print(f"  Total Requests: {metrics.total_requests}")
@@ -362,7 +362,7 @@ async def demo_load_testing():
         print(f"  Peak Memory Usage: {metrics.peak_memory_percent:.1f}%")
         
         # Show user metrics
-        print(f"\nUser Metrics:")
+        print("\nUser Metrics:")
         for user_id, user_metrics in metrics.user_metrics.items():
             avg_response = (user_metrics.total_response_time_ms / max(1, user_metrics.requests_completed))
             print(f"  {user_id}:")

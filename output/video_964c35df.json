@@ -1,0 +1,91 @@
+{
+  "error": "module 'PIL.Image' has no attribute 'ANTIALIAS'",
+  "script": {
+    "title": "Professional Video: \u0645\u0633\u0644\u0633\u0644 \u0627\u0645\u064a \u0627\u0644\u0633\u0639\u0648\u062f\u064a",
+    "total_duration": 120.0,
+    "scenes": [
+      {
+        "scene_number": 1,
+        "description": "Introduction",
+        "dialogue": "Welcome to our exploration of \u0645\u0633\u0644\u0633\u0644 \u0627\u0645\u064a \u0627\u0644\u0633\u0639\u0648\u062f\u064a.",
+        "duration": 40.0,
+        "assets": []
+      },
+      {
+        "scene_number": 2,
+        "description": "Main content",
+        "dialogue": "Key insights: Main point about \u0645\u0633\u0644\u0633\u0644 \u0627\u0645\u064a \u0627\u0644\u0633\u0639\u0648\u062f\u064a",
+        "duration": 40.0,
+        "assets": []
+      },
+      {
+        "scene_number": 3,
+        "description": "Conclusion",
+        "dialogue": "Thank you for watching this presentation.",
+        "duration": 40.0,
+        "assets": []
+      }
+    ],
+    "metadata": {
+      "created_from_research": true,
+      "target_duration": 120
+    }
+  },
+  "assets": {
+    "images": [
+      {
+        "asset_id": "generated_img_0",
+        "asset_type": "image",
+        "local_path": "generated_assets\\scene_0_172aaf5f.png",
+        "usage_rights": "generated",
+        "metadata": {
+          "source": "generated",
+          "scene": 0
+        }
+      },
+      {
+        "asset_id": "generated_img_1",
+        "asset_type": "image",
+        "local_path": "generated_assets\\scene_1_0ab4bcee.png",
+        "usage_rights": "generated",
+        "metadata": {
+          "source": "generated",
+          "scene": 1
+        }
+      },
+      {
+        "asset_id": "generated_img_2",
+        "asset_type": "image",
+        "local_path": "generated_assets\\scene_2_3d1d3d31.png",
+        "usage_rights": "generated",
+        "metadata": {
+          "source": "generated",
+          "scene": 2
+        }
+      }
+    ],
+    "videos": [],
+    "metadata": {
+      "sourcing_method": "ai_generation",
+      "total_assets": 3
+    }
+  },
+  "audio_assets": {
+    "narration": {
+      "file_path": "generated_assets\\narration_b2693c54.wav",
+      "duration": 120.0,
+      "format": "wav",
+      "voice": "system_default",
+      "text": "Welcome to our exploration of \u0645\u0633\u0644\u0633\u0644 \u0627\u0645\u064a \u0627\u0644\u0633\u0639\u0648\u062f\u064a. Key insights: Main point about \u0645\u0633\u0644\u0633\u0644 \u0627\u0645\u064a \u0627\u0644\u0633\u0639\u0648\u062f\u064a Thank you for watching this presentation."
+    },
+    "background_music": {
+      "file_path": "generated_assets\\background_placeholder.txt",
+      "duration": 120.0,
+      "format": "placeholder",
+      "volume": 0.3
+    },
+    "metadata": {
+      "total_duration": 120.0
+    }
+  }
+}

@@ -18,18 +18,14 @@ This module contains comprehensive tests for the command-line interface,
 including command execution, output validation, and error handling.
 """
 
-import os
 import tempfile
-import time
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 import pytest
 from click.testing import CliRunner
 
 from video_system.cli import cli
 from video_system.shared_libraries.models import VideoGenerationRequest, VideoStatus
-from video_system.shared_libraries.adk_session_manager import VideoSystemSessionManager, get_session_manager
 from video_system.shared_libraries.adk_session_models import VideoGenerationStage as SessionStage
 
 

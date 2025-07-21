@@ -16,7 +16,7 @@
 
 import os
 import requests
-from typing import Dict, Any, List
+from typing import Dict, Any
 from pydantic import BaseModel, Field
 
 
@@ -180,5 +180,6 @@ def search_unsplash_photos(query: str, per_page: int = 15, orientation: str = "a
         }
 
 
+from google.adk.tools import FunctionTool
 # Create the tool function for ADK
-unsplash_search_tool = search_unsplash_photos
+unsplash_search_tool = FunctionTool(search_unsplash_photos)

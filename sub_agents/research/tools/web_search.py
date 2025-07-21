@@ -16,7 +16,7 @@
 
 import os
 import requests
-from typing import Dict, Any, List
+from typing import Dict, Any
 from pydantic import BaseModel, Field
 
 from video_system.shared_libraries import (
@@ -326,5 +326,6 @@ def check_serper_health() -> Dict[str, Any]:
         }
 
 
+from google.adk.tools import FunctionTool
 # Create the tool function for ADK
-serper_web_search_tool = web_search
+serper_web_search_tool = FunctionTool(web_search)

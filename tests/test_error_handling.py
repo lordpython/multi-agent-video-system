@@ -16,30 +16,21 @@
 
 import pytest
 import os
-import tempfile
-import time
 import json
 import requests
-from unittest.mock import Mock, patch, MagicMock
-from typing import Dict, Any
+from unittest.mock import Mock, patch
 
 from video_system.shared_libraries import (
     VideoSystemError,
     APIError,
-    NetworkError,
     ValidationError,
     ProcessingError,
-    ResourceError,
-    RateLimitError,
-    TimeoutError,
     RetryConfig,
     retry_with_exponential_backoff,
     FallbackManager,
     FallbackConfig,
     CircuitBreaker,
     create_error_response,
-    get_logger,
-    log_error,
     ServiceRegistry,
     ResourceMonitor,
     GracefulDegradation,
@@ -597,7 +588,6 @@ class TestAgentErrorScenarios:
     def test_concurrent_resource_access(self):
         """Test concurrent access to shared resources."""
         import threading
-        import time
         
         # Use a shared rate limiter instance
         shared_limiter = RateLimiter(max_tokens=1, refill_rate=0.1)
@@ -608,7 +598,7 @@ class TestAgentErrorScenarios:
                 # Use the shared limiter
                 success = shared_limiter.acquire(1)
                 results.append(success)
-            except Exception as e:
+            except Exception:
                 results.append(False)
         
         # Start multiple concurrent operations
@@ -650,7 +640,6 @@ class TestIntegrationErrorScenarios:
     def test_concurrent_error_handling(self):
         """Test error handling under concurrent load."""
         import threading
-        import time
         
         errors = []
         

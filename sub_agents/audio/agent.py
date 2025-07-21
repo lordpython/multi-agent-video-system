@@ -26,9 +26,7 @@ from .tools.gemini_tts import check_gemini_tts_health
 
 from video_system.shared_libraries import (
     get_health_monitor,
-    get_logger,
-    ProcessingError,
-    log_error
+    get_logger
 )
 
 # Configure logger for audio agent
@@ -82,8 +80,9 @@ logger.info("Audio agent initialized with health monitoring")
 
 # Audio Agent with TTS and audio processing tools and error handling
 audio_agent = Agent(
-    model='gemini-2.5-flash',
+    model='gemini-2.5-pro',
     name='audio_agent',
+    description='Handles text-to-speech and audio processing for video narration.',
     instruction=return_instructions_audio(),
     tools=[
         gemini_tts_tool,

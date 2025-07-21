@@ -18,18 +18,15 @@ This module provides rate limiting capabilities for API calls, request throttlin
 and adaptive rate limiting based on service health and response times.
 """
 
-import asyncio
 import threading
 import time
 from collections import defaultdict, deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Dict, List, Optional, Callable, Any, Tuple, Union
-import math
+from typing import Dict, List, Optional, Any, Tuple
 
 from .logging_config import get_logger
-from .error_handling import VideoSystemError, ProcessingError
 
 logger = get_logger(__name__)
 

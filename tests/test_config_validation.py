@@ -18,7 +18,7 @@ import os
 import tempfile
 import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import json
 import yaml
 
@@ -26,7 +26,6 @@ from video_system.shared_libraries.config_manager import (
     ConfigurationManager,
     VideoSystemConfig,
     GoogleCloudConfig,
-    ExternalAPIConfig,
     VideoProcessingConfig,
     Environment,
     LogLevel,

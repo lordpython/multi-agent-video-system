@@ -19,7 +19,6 @@ performance under various load conditions and identify bottlenecks.
 """
 
 import asyncio
-import concurrent.futures
 import json
 import random
 import statistics
@@ -28,7 +27,7 @@ import time
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Dict, List, Optional, Callable, Any, Tuple
+from typing import Dict, List, Optional, Callable, Any
 import uuid
 
 from .models import VideoGenerationRequest

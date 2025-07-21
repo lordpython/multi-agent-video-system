@@ -90,7 +90,7 @@ async def main():
     
     # Summary
     all_passed = session_id is not None and workflow_success
-    logger.info(f"\nTest Results:")
+    logger.info("\nTest Results:")
     logger.info(f"  start_video_generation: {'PASSED' if session_id else 'FAILED'}")
     logger.info(f"  execute_complete_workflow: {'PASSED' if workflow_success else 'FAILED'}")
     logger.info(f"  Overall: {'ALL TESTS PASSED' if all_passed else 'SOME TESTS FAILED'}")

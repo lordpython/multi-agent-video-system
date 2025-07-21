@@ -16,7 +16,7 @@
 
 import os
 import requests
-from typing import Dict, Any, List
+from typing import Dict, Any
 from pydantic import BaseModel, Field
 
 
@@ -211,5 +211,6 @@ def search_pixabay_media(query: str, per_page: int = 15, media_type: str = "phot
         }
 
 
+from google.adk.tools import FunctionTool
 # Create the tool function for ADK
-pixabay_search_tool = search_pixabay_media
+pixabay_search_tool = FunctionTool(search_pixabay_media)

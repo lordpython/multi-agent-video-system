@@ -17,7 +17,7 @@
 import subprocess
 import os
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 from pydantic import BaseModel, Field
 # Tool class not needed - using function-based tools
 
@@ -277,5 +277,6 @@ def calculate_optimal_transition_duration(segment_duration: float) -> float:
     return max(0.5, min(3.0, optimal_duration))
 
 
+from google.adk.tools import FunctionTool
 # Create the tool function for ADK
-transition_effects_tool = apply_video_transitions
+transition_effects_tool = FunctionTool(apply_video_transitions)

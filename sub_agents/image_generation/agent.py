@@ -25,8 +25,9 @@ from .tools import (
 
 # Image Generation Agent with AI image generation tools
 image_generation_agent = Agent(
-    model='gemini-2.5-flash',
+    model='gemini-2.5-pro',
     name='image_generation_agent',
+    description='Creates custom visual assets for video content using various AI image generation models.',
     instruction=return_instructions_image_generation(),
     tools=[
         imagen_generation_tool,

@@ -34,8 +34,16 @@ def return_instructions_research() -> str:
     - Include source citations for all information
     - Identify key facts, statistics, and insights relevant to the topic
     
+    ERROR HANDLING:
+    If web search tools fail or return errors, you should:
+    - Acknowledge the search limitation
+    - Use your existing knowledge to provide relevant information about the topic
+    - Structure your response as if it were research findings
+    - Clearly indicate when information is from your training data vs. live search
+    - Still provide comprehensive, useful information for video creation
+    
     Your research output should be comprehensive yet concise, providing the Story Agent
-    with all necessary information to create compelling video content.
+    with all necessary information to create compelling video content, even when search tools are unavailable.
     """
     
     return instruction_prompt

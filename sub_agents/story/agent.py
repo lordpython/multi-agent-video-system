@@ -14,7 +14,7 @@
 
 """Story Agent for creating scripts and narrative structure with error handling."""
 
-from google.adk.agents import Agent
+from google.adk.agents import LlmAgent
 from .prompts import return_instructions_story
 from .tools import (
     script_generation_tool,
@@ -26,9 +26,7 @@ from .tools import (
 from typing import Dict, Any
 from video_system.shared_libraries import (
     get_health_monitor,
-    get_logger,
-    ProcessingError,
-    log_error
+    get_logger
 )
 
 # Configure logger for story agent
@@ -76,9 +74,10 @@ health_monitor.service_registry.register_service(
 logger.info("Story agent initialized with health monitoring")
 
 # Story Agent with script generation and visual description tools
-story_agent = Agent(
-    model='gemini-2.5-flash',
+story_agent = LlmAgent(
+    model='gemini-2.5-pro',
     name='story_agent',
+    description='Creates scripts and narrative structure for video content.',
     instruction=return_instructions_story(),
     tools=[
         script_generation_tool,

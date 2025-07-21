@@ -14,7 +14,6 @@
 
 """Video synchronization tool for aligning visual content with audio timing."""
 
-import json
 import logging
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
@@ -271,5 +270,6 @@ def _calculate_total_duration(timeline: List[Dict[str, Any]]) -> float:
     return max(entry.get('end_time', 0.0) for entry in timeline)
 
 
+from google.adk.tools import FunctionTool
 # Create the tool function for ADK
-video_synchronization_tool = synchronize_video_timeline
+video_synchronization_tool = FunctionTool(synchronize_video_timeline)

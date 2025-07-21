@@ -26,9 +26,7 @@ from .tools.pexels_search import check_pexels_health
 
 from video_system.shared_libraries import (
     get_health_monitor,
-    get_logger,
-    ProcessingError,
-    log_error
+    get_logger
 )
 
 # Configure logger for asset sourcing agent
@@ -85,8 +83,9 @@ logger.info("Asset sourcing agent initialized with health monitoring")
 
 # Asset Sourcing Agent with media API integration tools and error handling
 asset_sourcing_agent = Agent(
-    model='gemini-2.5-flash',
+    model='gemini-2.5-pro',
     name='asset_sourcing_agent',
+    description='Finds and manages visual assets for video content using various stock media APIs.',
     instruction=return_instructions_asset_sourcing(),
     tools=[
         pexels_search_tool,

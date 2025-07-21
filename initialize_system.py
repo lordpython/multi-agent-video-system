@@ -15,7 +15,6 @@
 
 """System initialization script for the multi-agent video system with comprehensive error handling."""
 
-import os
 import sys
 import signal
 import atexit
@@ -26,8 +25,6 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 from video_system.shared_libraries import (
-    initialize_logging,
-    log_system_startup,
     log_system_shutdown,
     get_health_monitor,
     get_logger
@@ -88,7 +85,7 @@ def main():
         # Display resource status
         resource_status = system_status.get('resource_status', {})
         if resource_status:
-            print(f"\nResource Status:")
+            print("\nResource Status:")
             metrics = resource_status.get('metrics', {})
             if metrics:
                 print(f"  CPU: {metrics.get('cpu_percent', 0):.1f}%")
@@ -99,7 +96,7 @@ def main():
         # Display quality settings
         quality_settings = system_status.get('quality_settings', {})
         if quality_settings:
-            print(f"\nCurrent Quality Settings:")
+            print("\nCurrent Quality Settings:")
             print(f"  Video Quality: {quality_settings.get('video_quality', 'unknown')}")
             print(f"  Audio Quality: {quality_settings.get('audio_quality', 'unknown')}")
             print(f"  Max Duration: {quality_settings.get('max_duration', 0)}s")

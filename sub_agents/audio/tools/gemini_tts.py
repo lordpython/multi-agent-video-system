@@ -17,10 +17,8 @@
 import base64
 import mimetypes
 import os
-import re
 import struct
-import tempfile
-from typing import Dict, Any, List
+from typing import Dict, Any
 from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
@@ -33,9 +31,6 @@ from video_system.shared_libraries import (
     TimeoutError,
     RetryConfig,
     retry_with_exponential_backoff,
-    FallbackManager,
-    FallbackConfig,
-    create_error_response,
     get_logger,
     log_error,
     with_resource_check,
@@ -379,5 +374,6 @@ def check_gemini_tts_health() -> Dict[str, Any]:
         }
 
 
+from google.adk.tools import FunctionTool
 # Create the tool function for ADK
-gemini_tts_tool = generate_speech_with_gemini
+gemini_tts_tool = FunctionTool(generate_speech_with_gemini)

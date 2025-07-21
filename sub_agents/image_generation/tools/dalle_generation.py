@@ -16,7 +16,7 @@
 
 import os
 import base64
-from typing import Dict, Any, List
+from typing import Dict, Any
 from pydantic import BaseModel, Field
 from google import genai
 from PIL import Image
@@ -137,7 +137,8 @@ def generate_imagen_image(
                     "usage_rights": "Generated content - check Google usage policies",
                     "media_type": "image",
                     "prompt": prompt,
-                    "image_id": f"imagen4_{i+1}"
+                    "image_id": f"imagen4_{i+1}",
+                    "size_bytes": len(image_bytes)
                 }
                 images.append(formatted_image)
                 
@@ -176,5 +177,6 @@ def generate_imagen_image(
         }
 
 
+from google.adk.tools import FunctionTool
 # Create the tool function for ADK
-imagen_generation_tool = generate_imagen_image
+imagen_generation_tool = FunctionTool(generate_imagen_image)

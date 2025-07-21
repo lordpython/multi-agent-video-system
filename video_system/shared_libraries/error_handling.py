@@ -22,13 +22,12 @@ import asyncio
 import functools
 import logging
 import time
-import traceback
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 from pydantic import BaseModel, Field
 import random
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 class ErrorSeverity(str, Enum):
@@ -451,7 +450,7 @@ class CircuitBreaker:
                 result = func(*args, **kwargs)
                 self._on_success()
                 return result
-            except self.expected_exception as e:
+            except self.expected_exception:
                 self._on_failure()
                 raise
         

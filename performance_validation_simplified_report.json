@@ -1,0 +1,407 @@
+{
+  "performance_validation_report": {
+    "timestamp": "2025-07-20T03:43:49.919826+00:00",
+    "test_environment": {
+      "adk_available": true,
+      "python_version": "3.12.9 (tags/v3.12.9:fdb8142, Feb  4 2025, 15:27:58) [MSC v.1942 64 bit (AMD64)]",
+      "process_id": 21624
+    },
+    "test_summary": {
+      "total_tests": 16,
+      "successful_tests": 16,
+      "success_rate": 1.0,
+      "total_duration_ms": 259.8862648010254,
+      "average_duration_ms": 16.242891550064087
+    },
+    "memory_performance": {
+      "average_memory_delta_mb": 0.051513671875,
+      "maximum_memory_delta_mb": 0.57421875,
+      "average_process_memory_mb": 293.4010009765625,
+      "memory_efficiency": "Improved"
+    },
+    "system_performance": {
+      "average_cpu_percent": 1.69375,
+      "performance_rating": "Excellent"
+    },
+    "code_reduction_metrics": {
+      "original_custom_code_lines": 2500,
+      "simplified_implementation_lines": 652,
+      "lines_eliminated": 1848,
+      "code_reduction_percentage": 73.92,
+      "complexity_reduction": "Eliminated custom session management, error handling, and state models"
+    },
+    "detailed_test_results": [
+      {
+        "test_name": "Single Session Creation",
+        "start_time": 1752983024.5761204,
+        "end_time": 1752983024.5761204,
+        "duration_ms": 0.0,
+        "memory_before_mb": 293.07421875,
+        "memory_after_mb": 293.08984375,
+        "memory_delta_mb": 0.015625,
+        "cpu_percent": 1.1,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "session_id": "03fd1ab9-e67f-428a-bdbd-5fda4bd38751",
+          "state_keys": 5
+        }
+      },
+      {
+        "test_name": "Batch Session Creation (10 sessions)",
+        "start_time": 1752983024.9041483,
+        "end_time": 1752983024.9041483,
+        "duration_ms": 0.0,
+        "memory_before_mb": 293.09375,
+        "memory_after_mb": 293.10546875,
+        "memory_delta_mb": 0.01171875,
+        "cpu_percent": 0.9,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "sessions_created": 10
+        }
+      },
+      {
+        "test_name": "Session Retrieval Speed",
+        "start_time": 1752983025.2416325,
+        "end_time": 1752983025.2416325,
+        "duration_ms": 0.0,
+        "memory_before_mb": 293.10546875,
+        "memory_after_mb": 293.109375,
+        "memory_delta_mb": 0.00390625,
+        "cpu_percent": 1.1,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "retrieved_successfully": true,
+          "state_preserved": true
+        }
+      },
+      {
+        "test_name": "State Modification Speed",
+        "start_time": 1752983025.56815,
+        "end_time": 1752983025.56815,
+        "duration_ms": 0.0,
+        "memory_before_mb": 293.109375,
+        "memory_after_mb": 293.11328125,
+        "memory_delta_mb": 0.00390625,
+        "cpu_percent": 1.1,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "modifications_performed": 300,
+          "final_state_size": 102
+        }
+      },
+      {
+        "test_name": "Research Tool Execution",
+        "start_time": 1752983025.8907392,
+        "end_time": 1752983025.8917391,
+        "duration_ms": 0.9999275207519531,
+        "memory_before_mb": 293.1171875,
+        "memory_after_mb": 293.1171875,
+        "memory_delta_mb": 0.0,
+        "cpu_percent": 1.2,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "success": true,
+          "research_facts": 3
+        }
+      },
+      {
+        "test_name": "Complete Orchestration Workflow",
+        "start_time": 1752983026.2302797,
+        "end_time": 1752983026.23328,
+        "duration_ms": 3.0002593994140625,
+        "memory_before_mb": 293.1171875,
+        "memory_after_mb": 293.12890625,
+        "memory_delta_mb": 0.01171875,
+        "cpu_percent": 0.5,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "workflow_completed": true,
+          "final_stage": "completed",
+          "final_progress": 1.0,
+          "scenes_processed": 3
+        }
+      },
+      {
+        "test_name": "Concurrent Tool Execution",
+        "start_time": 1752983026.5615945,
+        "end_time": 1752983026.5655942,
+        "duration_ms": 3.9997100830078125,
+        "memory_before_mb": 293.12890625,
+        "memory_after_mb": 293.14453125,
+        "memory_delta_mb": 0.015625,
+        "cpu_percent": 0.5,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "concurrent_tasks": 5,
+          "successful_tasks": 5,
+          "success_rate": 1.0
+        }
+      },
+      {
+        "test_name": "Input Validation Performance",
+        "start_time": 1752983026.8854282,
+        "end_time": 1752983026.886436,
+        "duration_ms": 1.0077953338623047,
+        "memory_before_mb": 293.14453125,
+        "memory_after_mb": 293.1484375,
+        "memory_delta_mb": 0.00390625,
+        "cpu_percent": 2.5,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "validation_tests": 4,
+          "validation_errors_caught": 4,
+          "validation_success_rate": 1.0
+        }
+      },
+      {
+        "test_name": "Error Propagation Performance",
+        "start_time": 1752983027.218339,
+        "end_time": 1752983027.2193308,
+        "duration_ms": 0.9918212890625,
+        "memory_before_mb": 293.1484375,
+        "memory_after_mb": 293.1484375,
+        "memory_delta_mb": 0.0,
+        "cpu_percent": 0.5,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "error_tests": 2,
+          "correct_error_types": 2
+        }
+      },
+      {
+        "test_name": "Health Endpoint Performance",
+        "start_time": 1752983027.5433924,
+        "end_time": 1752983027.5636642,
+        "duration_ms": 20.271778106689453,
+        "memory_before_mb": 293.1484375,
+        "memory_after_mb": 293.72265625,
+        "memory_delta_mb": 0.57421875,
+        "cpu_percent": 0.9,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "requests_made": 10,
+          "successful_requests": 10,
+          "success_rate": 1.0
+        }
+      },
+      {
+        "test_name": "Video Generation Endpoint Performance",
+        "start_time": 1752983027.8876681,
+        "end_time": 1752983027.8911712,
+        "duration_ms": 3.503084182739258,
+        "memory_before_mb": 293.73828125,
+        "memory_after_mb": 293.74609375,
+        "memory_delta_mb": 0.0078125,
+        "cpu_percent": 0.5,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "status_code": 200,
+          "response_time_ms": 3.8240000000000003,
+          "session_id": "96e6e904-97e0-44c0-bc4b-36baa19869c4",
+          "response_valid": true
+        }
+      },
+      {
+        "test_name": "Status Endpoint Performance",
+        "start_time": 1752983028.223245,
+        "end_time": 1752983028.224244,
+        "duration_ms": 0.9992122650146484,
+        "memory_before_mb": 293.74609375,
+        "memory_after_mb": 293.75,
+        "memory_delta_mb": 0.00390625,
+        "cpu_percent": 1.0,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "status_code": 404,
+          "response_valid": false
+        }
+      },
+      {
+        "test_name": "Baseline Memory Usage",
+        "start_time": 1752983028.5493512,
+        "end_time": 1752983028.7539375,
+        "duration_ms": 204.58626747131348,
+        "memory_before_mb": 293.75,
+        "memory_after_mb": 293.75,
+        "memory_delta_mb": 0.0,
+        "cpu_percent": 2.1,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "baseline_memory_mb": 293.75,
+          "baseline_threads": 9
+        }
+      },
+      {
+        "test_name": "Session Operations Memory Usage",
+        "start_time": 1752983029.0831509,
+        "end_time": 1752983029.0841503,
+        "duration_ms": 0.99945068359375,
+        "memory_before_mb": 293.75,
+        "memory_after_mb": 293.91015625,
+        "memory_delta_mb": 0.16015625,
+        "cpu_percent": 4.3,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "sessions_created": 50,
+          "state_operations": 150
+        }
+      },
+      {
+        "test_name": "Tool Execution Memory Usage",
+        "start_time": 1752983029.4411154,
+        "end_time": 1752983029.4581316,
+        "duration_ms": 17.016172409057617,
+        "memory_before_mb": 293.91015625,
+        "memory_after_mb": 293.921875,
+        "memory_delta_mb": 0.01171875,
+        "cpu_percent": 1.7,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "workflows_completed": 5
+        }
+      },
+      {
+        "test_name": "Complete Integration Test Suite",
+        "start_time": 1752983029.7923205,
+        "end_time": 1752983029.7948313,
+        "duration_ms": 2.5107860565185547,
+        "memory_before_mb": 293.921875,
+        "memory_after_mb": 293.921875,
+        "memory_delta_mb": 0.0,
+        "cpu_percent": 2.5,
+        "success": true,
+        "error_message": null,
+        "additional_data": {
+          "test_results": {
+            "session_management": true,
+            "orchestration_tools": true,
+            "error_handling": true,
+            "api_endpoints": true,
+            "state_management": true
+          },
+          "tests_passed": 5,
+          "total_tests": 5,
+          "success_rate": 1.0
+        }
+      }
+    ],
+    "system_metrics": [
+      {
+        "timestamp": 1752983028.223245,
+        "cpu_percent": 4.7,
+        "memory_percent": 74.9,
+        "memory_used_mb": 48865.390625,
+        "memory_available_mb": 16401.0234375,
+        "process_memory_mb": 293.74609375,
+        "thread_count": 9,
+        "file_descriptors": 0
+      },
+      {
+        "timestamp": 1752983028.3492398,
+        "cpu_percent": 1.0,
+        "memory_percent": 74.9,
+        "memory_used_mb": 48864.63671875,
+        "memory_available_mb": 16401.77734375,
+        "process_memory_mb": 293.75,
+        "thread_count": 9,
+        "file_descriptors": 0
+      },
+      {
+        "timestamp": 1752983028.5493512,
+        "cpu_percent": 1.0,
+        "memory_percent": 74.9,
+        "memory_used_mb": 48863.78125,
+        "memory_available_mb": 16402.6328125,
+        "process_memory_mb": 293.75,
+        "thread_count": 9,
+        "file_descriptors": 0
+      },
+      {
+        "timestamp": 1752983028.878928,
+        "cpu_percent": 2.1,
+        "memory_percent": 74.9,
+        "memory_used_mb": 48864.94921875,
+        "memory_available_mb": 16401.46484375,
+        "process_memory_mb": 293.75,
+        "thread_count": 9,
+        "file_descriptors": 0
+      },
+      {
+        "timestamp": 1752983029.0831509,
+        "cpu_percent": 0.0,
+        "memory_percent": 74.9,
+        "memory_used_mb": 48863.44140625,
+        "memory_available_mb": 16402.97265625,
+        "process_memory_mb": 293.75,
+        "thread_count": 9,
+        "file_descriptors": 0
+      },
+      {
+        "timestamp": 1752983029.2086623,
+        "cpu_percent": 4.3,
+        "memory_percent": 74.9,
+        "memory_used_mb": 48867.61328125,
+        "memory_available_mb": 16398.80078125,
+        "process_memory_mb": 293.91015625,
+        "thread_count": 9,
+        "file_descriptors": 0
+      },
+      {
+        "timestamp": 1752983029.4411154,
+        "cpu_percent": 10.0,
+        "memory_percent": 74.9,
+        "memory_used_mb": 48870.6796875,
+        "memory_available_mb": 16395.734375,
+        "process_memory_mb": 293.91015625,
+        "thread_count": 9,
+        "file_descriptors": 0
+      },
+      {
+        "timestamp": 1752983029.5827026,
+        "cpu_percent": 1.7,
+        "memory_percent": 74.7,
+        "memory_used_mb": 48773.26953125,
+        "memory_available_mb": 16493.14453125,
+        "process_memory_mb": 293.921875,
+        "thread_count": 9,
+        "file_descriptors": 0
+      },
+      {
+        "timestamp": 1752983029.7923205,
+        "cpu_percent": 2.5,
+        "memory_percent": 74.7,
+        "memory_used_mb": 48781.0625,
+        "memory_available_mb": 16485.3515625,
+        "process_memory_mb": 293.921875,
+        "thread_count": 9,
+        "file_descriptors": 0
+      },
+      {
+        "timestamp": 1752983029.9183238,
+        "cpu_percent": 2.5,
+        "memory_percent": 74.7,
+        "memory_used_mb": 48779.8984375,
+        "memory_available_mb": 16486.515625,
+        "process_memory_mb": 293.921875,
+        "thread_count": 9,
+        "file_descriptors": 0
+      }
+    ]
+  }
+}

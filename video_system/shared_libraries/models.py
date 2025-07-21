@@ -22,7 +22,6 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional, Dict, Any
 from enum import Enum
 import re
-from datetime import datetime
 import uuid
 
 
@@ -130,6 +129,51 @@ class AssetItem(BaseModel):
     local_path: Optional[str] = Field(None, description="Local file path after download")
     usage_rights: str = Field(..., description="Usage rights information")
     metadata: Dict[str, Any] = Field(default={}, description="Additional asset metadata")
+    
+    @field_validator('asset_type')
+    @classmethod
+    def validate_asset_type(cls, v: str) -> str:
+        """Validate that asset_type is one of the allowed values."""
+        allowed_types = {'image', 'video', 'audio'}
+        if v.lower() not in allowed_types:
+            raise ValueError(f"asset_type must be one of {allowed_types}, got: {v}")
+        return v.lower()
+    
+    @field_validator('asset_id')
+    @classmethod
+    def validate_asset_id(cls, v: str) -> str:
+        """Validate that asset_id is not empty."""
+        if not v or not v.strip():
+            raise ValueError("asset_id cannot be empty")
+        return v.strip()
+    
+    @field_validator('source_url')
+    @classmethod
+    def validate_source_url(cls, v: str) -> str:
+        """Validate that source_url is not empty."""
+        if not v or not v.strip():
+            raise ValueError("source_url cannot be empty")
+        return v.strip()
+    
+    @field_validator('usage_rights')
+    @classmethod
+    def validate_usage_rights(cls, v: str) -> str:
+        """Validate that usage_rights is not empty."""
+        if not v or not v.strip():
+            raise ValueError("usage_rights cannot be empty")
+        return v.strip()
+    
+    def get(self, key: str, default=None):
+        """Dictionary-style access for backward compatibility.
+        
+        This method provides backward compatibility for code that expects
+        dictionary-style access to asset properties.
+        """
+        return getattr(self, key, default)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return self.model_dump()
 
 
 class VideoGenerationStatus(BaseModel):

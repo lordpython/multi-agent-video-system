@@ -14,7 +14,7 @@
 
 """Prompt optimization tool for consistent image generation."""
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -29,7 +29,7 @@ class PromptOptimizerInput(BaseModel):
 def optimize_image_prompt(
     scene_description: str, 
     video_style: str = "professional", 
-    consistency_elements: List[str] = None, 
+    consistency_elements: Optional[List[str]] = None, 
     target_service: str = "imagen4"
 ) -> Dict[str, Any]:
     """
@@ -226,6 +226,7 @@ def generate_style_variations(base_prompt: str, num_variations: int = 3) -> Dict
         }
 
 
+from google.adk.tools import FunctionTool
 # Create the tool functions for ADK
-prompt_optimizer_tool = optimize_image_prompt
-style_variations_tool = generate_style_variations
+prompt_optimizer_tool = FunctionTool(optimize_image_prompt)
+style_variations_tool = FunctionTool(generate_style_variations)

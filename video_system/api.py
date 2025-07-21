@@ -12,66 +12,111 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""FastAPI REST API interface for the Multi-Agent Video System.
-
-This module provides REST API endpoints for video generation, status checking,
-and system management with comprehensive request validation and error handling.
-"""
+"""Enhanced API with real video generation capabilities."""
 
 import asyncio
 import os
 from datetime import datetime, timezone
-from typing import List, Optional, Dict, Any
+from typing import Optional, Dict, Any
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, Path as PathParam
+from fastapi import FastAPI, HTTPException, Path as PathParam, Query
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from dotenv import load_dotenv
 
-from .shared_libraries.models import (
-    VideoGenerationRequest, VideoGenerationStatus, VideoStatus
-)
-from .shared_libraries.adk_session_manager import get_session_manager
-from .shared_libraries.adk_session_models import VideoGenerationStage
-from .shared_libraries.progress_monitor import get_progress_monitor
-from .agent import initialize_video_system, check_orchestrator_health
+from .shared_libraries.models import VideoGenerationRequest
 from .shared_libraries.logging_config import get_logger
+from .agent import root_agent
+
+# ADK imports with availability check
+try:
+    from google.adk.runners import Runner
+    from google.adk.sessions import SessionService, InMemorySessionService
+    from google.genai.types import Content, Part
+    from rich.console import Console
+
+    ADK_AVAILABLE = True
+except ImportError as e:
+    print(f"ADK not available: {e}")
+    ADK_AVAILABLE = False
+
+    # Mock classes for development
+    class Runner:
+        pass
+
+    class SessionService:
+        pass
+
+    class InMemorySessionService:
+        pass
+
+    class Content:
+        pass
+
+    class Part:
+        pass
+
+    class Console:
+        def __init__(self):
+            pass
+
 
 # Load environment variables
 load_dotenv()
 
+console = Console()
 logger = get_logger(__name__)
 
-# Initialize system on startup
-from contextlib import asynccontextmanager
+# Initialize ADK SessionService
+if ADK_AVAILABLE:
+    session_service: SessionService = InMemorySessionService()
+else:
+    # Mock session service for development
+    class MockSessionService:
+        def __init__(self):
+            self.sessions = {}
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Initialize the video system on startup."""
-    try:
-        initialize_video_system()
-        logger.info("Video system initialized successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize video system: {e}")
-        raise
-    yield
+        async def create_session(self, app_name: str, user_id: str, state: dict = None):
+            import uuid
+
+            session_id = str(uuid.uuid4())
+            session = type(
+                "Session",
+                (),
+                {
+                    "id": session_id,
+                    "app_name": app_name,
+                    "user_id": user_id,
+                    "state": state or {},
+                    "last_update_time": datetime.now(timezone.utc).timestamp(),
+                },
+            )()
+            self.sessions[session_id] = session
+            return session
+
+        async def get_session(self, app_name: str, user_id: str, session_id: str):
+            return self.sessions.get(session_id)
+
+        async def delete_session(self, app_name: str, user_id: str, session_id: str):
+            self.sessions.pop(session_id, None)
+
+    session_service = MockSessionService()
 
 # Create FastAPI app
 app = FastAPI(
-    title="Multi-Agent Video System API",
-    description="AI-powered video creation platform built on Google's Agent Development Kit (ADK) framework",
-    version="0.1.0",
+    title="Multi-Agent Video System API (Real Generation)",
+    description="AI-powered video creation platform with real video generation capabilities",
+    version="0.3.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    lifespan=lifespan
 )
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -80,24 +125,41 @@ app.add_middleware(
 
 # Request/Response Models
 
-class VideoGenerationRequestAPI(BaseModel):
-    """API model for video generation requests."""
-    prompt: str = Field(..., min_length=10, max_length=2000, description="Text prompt for video generation")
-    duration_preference: Optional[int] = Field(60, ge=10, le=600, description="Preferred video duration in seconds")
+
+class VideoGenerationRequest(BaseModel):
+    """API model for real video generation requests."""
+
+    prompt: str = Field(
+        ...,
+        min_length=10,
+        max_length=2000,
+        description="Text prompt for video generation",
+    )
+    duration_preference: Optional[int] = Field(
+        60, ge=10, le=600, description="Preferred video duration in seconds"
+    )
     style: Optional[str] = Field("professional", description="Video style preference")
-    voice_preference: Optional[str] = Field("neutral", description="Voice preference for narration")
+    voice_preference: Optional[str] = Field(
+        "neutral", description="Voice preference for narration"
+    )
     quality: Optional[str] = Field("high", description="Video quality setting")
     user_id: Optional[str] = Field(None, description="Optional user identifier")
-    
-    @field_validator('style')
+
+    @field_validator("style")
     @classmethod
     def validate_style(cls, v):
-        valid_styles = ["professional", "casual", "educational", "entertainment", "documentary"]
+        valid_styles = [
+            "professional",
+            "casual",
+            "educational",
+            "entertainment",
+            "documentary",
+        ]
         if v not in valid_styles:
             raise ValueError(f"Style must be one of: {', '.join(valid_styles)}")
         return v
-    
-    @field_validator('quality')
+
+    @field_validator("quality")
     @classmethod
     def validate_quality(cls, v):
         valid_qualities = ["low", "medium", "high", "ultra"]
@@ -106,117 +168,87 @@ class VideoGenerationRequestAPI(BaseModel):
         return v
 
 
-class VideoGenerationResponseAPI(BaseModel):
+class VideoGenerationResponse(BaseModel):
     """API model for video generation responses."""
+
     session_id: str
     status: str
     message: str
+    estimated_duration_minutes: Optional[int] = None
     created_at: datetime
-    estimated_completion: Optional[datetime] = None
 
 
-class SessionStatusResponseAPI(BaseModel):
+class SessionStatusResponse(BaseModel):
     """API model for session status responses."""
+
     session_id: str
     status: str
     stage: str
     progress: float
     created_at: datetime
     updated_at: datetime
-    estimated_completion: Optional[datetime] = None
     error_message: Optional[str] = None
+    video_file_path: Optional[str] = None
     request_details: Dict[str, Any]
 
 
-class SessionListResponseAPI(BaseModel):
-    """API model for session list responses."""
-    sessions: List[SessionStatusResponseAPI]
-    total_count: int
-    page: int
-    page_size: int
-
-
-class SystemStatsResponseAPI(BaseModel):
-    """API model for system statistics responses."""
-    total_sessions: int
-    active_sessions: int
-    status_distribution: Dict[str, int]
-    stage_distribution: Dict[str, int]
-    average_progress: float
-    system_health: Dict[str, Any]
-
-
-class HealthCheckResponseAPI(BaseModel):
-    """API model for health check responses."""
-    status: str
-    timestamp: datetime
-    details: Dict[str, Any]
-
-
 # API Endpoints
+
 
 @app.get("/", response_model=Dict[str, str])
 async def root():
     """Root endpoint with API information."""
     return {
         "name": "Multi-Agent Video System API",
-        "version": "0.1.0",
-        "description": "AI-powered video creation platform",
+        "version": "0.3.0",
+        "description": "AI-powered video creation with real video generation capabilities",
         "docs_url": "/docs",
-        "health_url": "/health"
+        "health_url": "/health",
     }
 
 
-@app.post("/videos/generate", response_model=VideoGenerationResponseAPI)
-async def generate_video(request: VideoGenerationRequestAPI, background_tasks: BackgroundTasks):
-    """Start video generation from a text prompt."""
+@app.post("/videos/generate", response_model=VideoGenerationResponse)
+async def generate_video(request: VideoGenerationRequest):
+    """Start video generation."""
     try:
         logger.info(f"Received video generation request: {request.prompt[:50]}...")
-        
-        # Create video generation request
-        video_request = VideoGenerationRequest(
-            prompt=request.prompt,
-            duration_preference=request.duration_preference,
-            style=request.style,
-            voice_preference=request.voice_preference,
-            quality=request.quality
+
+        agent = root_agent
+        app_name = "video-generation-system"
+        estimated_duration = max(2, request.duration_preference // 30)  # Rough estimate
+
+        # Create session
+        session = await session_service.create_session(
+            app_name=app_name,
+            user_id=request.user_id or "default",
+            state={
+                "prompt": request.prompt,
+                "duration_preference": request.duration_preference,
+                "style": request.style,
+                "voice_preference": request.voice_preference,
+                "quality": request.quality,
+                "current_stage": "initializing",
+                "progress": 0.0,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "status": "processing",
+            },
         )
-        
-        # Use the agent function to create session and start generation
-        from .agent import start_video_generation
-        result = await start_video_generation(
-            prompt=video_request.prompt,
-            duration_preference=video_request.duration_preference,
-            style=video_request.style,
-            voice_preference=video_request.voice_preference,
-            quality=video_request.quality,
-            user_id=request.user_id or "default"
+
+        logger.info(f"Created session {session.id} for video generation")
+
+        # Start video generation asynchronously
+        asyncio.create_task(
+            _process_video_generation(session.id, request.prompt, agent, app_name)
         )
-        
-        if not result.get('success'):
-            raise HTTPException(status_code=400, detail=result.get('error_message', 'Failed to start video generation'))
-        
-        session_id = result['session_id']
-        
-        # Start progress monitoring
-        progress_monitor = get_progress_monitor()
-        progress_monitor.start_session_monitoring(session_id)
-        
-        # Start background processing
-        background_tasks.add_task(_process_video_generation, session_id)
-        
-        # Get session status
-        session_manager = await get_session_manager()
-        session_status = await session_manager.get_session_status(session_id)
-        
-        return VideoGenerationResponseAPI(
-            session_id=session_id,
-            status=session_status.status if session_status else "queued",
+
+        return VideoGenerationResponse(
+            session_id=session.id,
+            status="processing",
             message="Video generation started successfully",
+            estimated_duration_minutes=estimated_duration,
             created_at=datetime.now(timezone.utc),
-            estimated_completion=None
         )
-        
+
     except ValueError as e:
         logger.warning(f"Invalid request: {e}")
         raise HTTPException(status_code=400, detail=str(e))
@@ -225,30 +257,73 @@ async def generate_video(request: VideoGenerationRequestAPI, background_tasks: B
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/videos/{session_id}/status", response_model=SessionStatusResponseAPI)
+@app.get("/videos/{session_id}/status", response_model=SessionStatusResponse)
 async def get_video_status(session_id: str = PathParam(..., description="Session ID")):
     """Get the status of a video generation session."""
     try:
-        session_manager = await get_session_manager()
-        state = await session_manager.get_session_state(session_id)
-        
-        if not state:
-            raise HTTPException(status_code=404, detail="Session not found")
-        
-        status_value = "completed" if state.is_completed() else "failed" if state.is_failed() else "processing"
-        
-        return SessionStatusResponseAPI(
+        session = await session_service.get_session(
+            app_name="video-generation-system",
+            user_id="default",  # Or get from auth
             session_id=session_id,
-            status=status_value,
-            stage=state.current_stage.value,
-            progress=state.progress,
-            created_at=state.created_at,
-            updated_at=state.updated_at,
-            estimated_completion=state.estimated_completion,
-            error_message=state.error_message,
-            request_details=state.request.model_dump()
         )
-        
+
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        # Extract status information
+        state = session.state
+        current_stage = state.get("current_stage", "unknown")
+        progress = state.get("progress", 0.0)
+        error_message = state.get("error_message")
+        created_at_str = state.get("created_at")
+
+        # Determine status
+        if error_message:
+            status = "failed"
+        elif current_stage == "completed":
+            status = "completed"
+        elif current_stage == "failed":
+            status = "failed"
+        else:
+            status = "processing"
+
+        # Get video file path if available
+        video_file_path = None
+        if "final_video" in state:
+            final_video_data = state["final_video"]
+            if isinstance(final_video_data, dict):
+                video_file_path = final_video_data.get("video_file")
+
+        # Parse created_at timestamp
+        try:
+            created_at = (
+                datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+                if created_at_str
+                else datetime.now(timezone.utc)
+            )
+        except (ValueError, AttributeError):
+            created_at = datetime.now(timezone.utc)
+
+        return SessionStatusResponse(
+            session_id=session_id,
+            status=status,
+            stage=current_stage,
+            progress=progress,
+            created_at=created_at,
+            updated_at=datetime.fromtimestamp(
+                session.last_update_time, tz=timezone.utc
+            ),
+            error_message=error_message,
+            video_file_path=video_file_path,
+            request_details={
+                "prompt": state.get("prompt", ""),
+                "duration_preference": state.get("duration_preference", 60),
+                "style": state.get("style", "professional"),
+                "voice_preference": state.get("voice_preference", "neutral"),
+                "quality": state.get("quality", "high"),
+            },
+        )
+
     except HTTPException:
         raise
     except Exception as e:
@@ -256,52 +331,41 @@ async def get_video_status(session_id: str = PathParam(..., description="Session
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/videos/{session_id}/progress", response_model=Dict[str, Any])
-async def get_video_progress(session_id: str = PathParam(..., description="Session ID")):
-    """Get detailed progress information for a video generation session."""
-    try:
-        progress_monitor = get_progress_monitor()
-        progress_info = progress_monitor.get_session_progress(session_id)
-        
-        if not progress_info:
-            raise HTTPException(status_code=404, detail="Session not found or not being monitored")
-        
-        return progress_info
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting session progress: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
 @app.get("/videos/{session_id}/download")
 async def download_video(session_id: str = PathParam(..., description="Session ID")):
     """Download the generated video file."""
     try:
-        session_manager = await get_session_manager()
-        state = await session_manager.get_session_state(session_id)
-        
-        if not state:
+        # Find session
+        session = await session_service.get_session(
+            app_name="video-generation-system",
+            user_id="default",  # Or get from auth
+            session_id=session_id,
+        )
+
+        if not session:
             raise HTTPException(status_code=404, detail="Session not found")
-        
-        if not state.is_completed():
-            raise HTTPException(status_code=400, detail="Video generation not completed")
-        
-        # Get final video file
-        if not state.final_video:
+
+        state = session.state
+        if state.get("current_stage") != "completed":
+            raise HTTPException(
+                status_code=400, detail="Video generation not completed"
+            )
+
+        # Get video file path
+        final_video_data = state.get("final_video")
+        if not final_video_data or not final_video_data.get("video_file"):
             raise HTTPException(status_code=404, detail="Video file not found")
-        
-        video_path = Path(state.final_video.file_path)
+
+        video_path = Path(final_video_data["video_file"])
         if not video_path.exists():
             raise HTTPException(status_code=404, detail="Video file not found on disk")
-        
+
         return FileResponse(
             path=str(video_path),
             filename=f"video_{session_id[:8]}.mp4",
-            media_type="video/mp4"
+            media_type="video/mp4",
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -309,251 +373,271 @@ async def download_video(session_id: str = PathParam(..., description="Session I
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.delete("/videos/{session_id}")
-async def cancel_video_generation(session_id: str = PathParam(..., description="Session ID")):
-    """Cancel a video generation session."""
+@app.get("/system/stats")
+async def system_stats():
+    """Get system statistics."""
     try:
-        session_manager = await get_session_manager()
-        state = await session_manager.get_session_state(session_id)
-        
-        if not state:
-            raise HTTPException(status_code=404, detail="Session not found")
-        
-        # Update session status to cancelled
-        success = await session_manager.update_stage_and_progress(
-            session_id,
-            VideoGenerationStage.FAILED,
-            error_message="Cancelled by user request"
-        )
-        
-        if not success:
-            raise HTTPException(status_code=500, detail="Failed to cancel session")
-        
-        # Stop progress monitoring
-        progress_monitor = get_progress_monitor()
-        progress_monitor.complete_session(session_id, success=False, error_message="Cancelled by user")
-        
-        return {"message": "Session cancelled successfully", "session_id": session_id}
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error cancelling session: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        # This is a simplified implementation. In a real system, you'd query a database.
+        sessions = session_service.sessions.values()
 
+        total_sessions = len(sessions)
+        status_distribution = {}
 
-@app.get("/videos", response_model=SessionListResponseAPI)
-async def list_video_sessions(
-    user_id: Optional[str] = Query(None, description="Filter by user ID"),
-    status: Optional[str] = Query(None, description="Filter by status (completed, failed, processing, queued)"),
-    page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(20, ge=1, le=100, description="Page size")
-):
-    """List video generation sessions with optional filtering and pagination."""
-    try:
-        session_manager = await get_session_manager()
-        
-        # Use the new paginated listing functionality
-        result = await session_manager.list_sessions_paginated(
-            user_id=user_id,
-            page=page,
-            page_size=page_size,
-            status_filter=status
-        )
-        
-        sessions = result["sessions"]
-        pagination = result["pagination"]
-        
-        # Convert to API response format
-        session_responses = []
-        for state in sessions:
-            status_value = "completed" if state.is_completed() else "failed" if state.is_failed() else "processing"
-            session_responses.append(SessionStatusResponseAPI(
-                session_id=state.session_id,
-                status=status_value,
-                stage=state.current_stage.value,
-                progress=state.progress,
-                created_at=state.created_at,
-                updated_at=state.updated_at,
-                estimated_completion=state.estimated_completion,
-                error_message=state.error_message,
-                request_details=state.request.model_dump()
-            ))
-        
-        return SessionListResponseAPI(
-            sessions=session_responses,
-            total_count=pagination["total_count"],
-            page=pagination["page"],
-            page_size=pagination["page_size"]
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error listing sessions: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        for session in sessions:
+            state = session.state
+            current_stage = state.get("current_stage", "unknown")
+            error_message = state.get("error_message")
 
+            if error_message:
+                status = "failed"
+            elif current_stage == "completed":
+                status = "completed"
+            elif current_stage == "failed":
+                status = "failed"
+            else:
+                status = "processing"
 
-@app.get("/system/stats", response_model=SystemStatsResponseAPI)
-async def get_system_stats():
-    """Get system statistics and health information."""
-    try:
-        session_manager = await get_session_manager()
-        stats = await session_manager.get_statistics()
-        health = check_orchestrator_health()
-        
-        return SystemStatsResponseAPI(
-            total_sessions=stats.total_sessions,
-            active_sessions=stats.active_sessions,
-            status_distribution={"completed": stats.completed_sessions, "failed": stats.failed_sessions, "active": stats.active_sessions},
-            stage_distribution={},  # Not available in new model
-            average_progress=0.0,  # Not available in new model
-            system_health=health
-        )
-        
+            status_distribution[status] = status_distribution.get(status, 0) + 1
+
+        return {
+            "total_sessions": total_sessions,
+            "status_distribution": status_distribution,
+        }
+
     except Exception as e:
         logger.error(f"Error getting system stats: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@app.get("/health", response_model=HealthCheckResponseAPI)
-async def health_check():
-    """Health check endpoint for monitoring and load balancers."""
+@app.post("/system/cleanup")
+async def cleanup_sessions(max_age_hours: int = 24):
+    """Clean up old and completed sessions."""
     try:
-        health = check_orchestrator_health()
-        
-        # Determine HTTP status code based on health
-        status_code = 200
-        if health["status"] == "degraded":
-            status_code = 200  # Still operational
-        elif health["status"] == "unhealthy":
-            status_code = 503  # Service unavailable
-        
-        response = HealthCheckResponseAPI(
-            status=health["status"],
-            timestamp=datetime.now(timezone.utc),
-            details=health.get("details", {})
+        # This is a simplified implementation. In a real system, you'd query a database.
+        now = datetime.now(timezone.utc)
+        cleaned_count = 0
+        sessions_to_delete = []
+
+        for session_id, session in session_service.sessions.items():
+            created_at_str = session.state.get("created_at")
+            if created_at_str:
+                try:
+                    created_at = datetime.fromisoformat(
+                        created_at_str.replace("Z", "+00:00")
+                    )
+                    age_hours = (now - created_at).total_seconds() / 3600
+                    if age_hours > max_age_hours:
+                        sessions_to_delete.append(session_id)
+                except (ValueError, AttributeError):
+                    continue
+
+        for session_id in sessions_to_delete:
+            await session_service.delete_session(
+                app_name="video-generation-system",
+                user_id="default",  # or get from auth
+                session_id=session_id,
+            )
+            cleaned_count += 1
+
+        return {"cleaned_count": cleaned_count, "max_age_hours": max_age_hours}
+
+    except Exception as e:
+        logger.error(f"Error cleaning up sessions: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/videos/list")
+async def list_sessions():
+    """List all video generation sessions."""
+    try:
+        # This is a simplified implementation. In a real system, you'd query a database.
+        sessions = session_service.sessions.values()
+
+        session_list = []
+        for session in sessions:
+            state = session.state
+            current_stage = state.get("current_stage", "unknown")
+            error_message = state.get("error_message")
+
+            if error_message:
+                status = "failed"
+            elif current_stage == "completed":
+                status = "completed"
+            elif current_stage == "failed":
+                status = "failed"
+            else:
+                status = "processing"
+
+            session_list.append(
+                {
+                    "session_id": session.id,
+                    "status": status,
+                    "stage": current_stage,
+                    "progress": state.get("progress", 0.0),
+                    "created_at": state.get("created_at"),
+                    "user_id": session.user_id,
+                }
+            )
+
+        return {"sessions": session_list}
+
+    except Exception as e:
+        logger.error(f"Error listing sessions: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/health")
+async def health_check():
+    """Enhanced health check with dependency status."""
+    try:
+        # Check session service
+        test_session = await session_service.create_session(
+            app_name="health-check", user_id="health", state={"test": True}
         )
-        
-        # Convert to dict with proper datetime serialization
-        response_dict = response.model_dump()
-        response_dict["timestamp"] = response.timestamp.isoformat()
-        
-        return JSONResponse(content=response_dict, status_code=status_code)
-        
+
+        await session_service.delete_session(
+            app_name="health-check", user_id="health", session_id=test_session.id
+        )
+
+        # Check video generation dependencies
+        dependencies = {}
+
+        try:
+            import moviepy
+
+            dependencies["moviepy"] = "available"
+        except ImportError:
+            dependencies["moviepy"] = "missing"
+
+        try:
+            import PIL
+
+            dependencies["pillow"] = "available"
+        except ImportError:
+            dependencies["pillow"] = "missing"
+
+        try:
+            import pyttsx3
+
+            dependencies["pyttsx3"] = "available"
+        except ImportError:
+            dependencies["pyttsx3"] = "missing"
+
+        try:
+            import numpy
+
+            dependencies["numpy"] = "available"
+        except ImportError:
+            dependencies["numpy"] = "missing"
+
+        # Determine overall health
+        missing_deps = [k for k, v in dependencies.items() if v == "missing"]
+        real_generation_available = len(missing_deps) == 0
+
+        response = {
+            "status": "healthy",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "details": {
+                "session_service": "operational",
+                "adk_available": ADK_AVAILABLE,
+                "mock_generation": "available",
+                "real_generation": "available"
+                if real_generation_available
+                else "limited",
+                "dependencies": dependencies,
+            },
+        }
+
+        if missing_deps:
+            response["details"]["missing_dependencies"] = missing_deps
+            response["details"]["note"] = (
+                "Real video generation requires all dependencies"
+            )
+
+        return response
+
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return JSONResponse(
             content={
                 "status": "unhealthy",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "details": {"error": str(e)}
+                "details": {"error": str(e)},
             },
-            status_code=503
+            status_code=503,
         )
 
 
-@app.post("/system/cleanup")
-async def cleanup_sessions(max_age_hours: int = Query(24, ge=1, description="Maximum age in hours")):
-    """Clean up old and completed sessions."""
+# Background task function
+
+
+async def _process_video_generation(session_id: str, prompt: str, agent, app_name: str):
+    """Background task to process video generation with selected agent."""
     try:
-        session_manager = await get_session_manager()
-        cleaned_count = await session_manager.cleanup_expired_sessions()
-        
-        return {
-            "message": f"Cleaned up {cleaned_count} expired sessions",
-            "cleaned_count": cleaned_count,
-            "max_age_hours": max_age_hours
-        }
-        
-    except Exception as e:
-        logger.error(f"Error during cleanup: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.info(
+            f"Starting video generation for session {session_id} with {agent.name}"
+        )
 
+        # Find session
+        session = await session_service.get_session(
+            app_name=app_name,
+            user_id="default",  # or get from auth
+            session_id=session_id,
+        )
 
-# Background task functions
-
-async def _process_video_generation(session_id: str):
-    """Background task to process video generation."""
-    try:
-        logger.info(f"Starting background video generation for session {session_id}")
-        
-        # Use the agent function to execute the workflow
-        from .agent import execute_complete_workflow
-        workflow_result = await execute_complete_workflow(session_id)
-        
-        if not workflow_result.get('success'):
-            logger.error(f"Workflow execution failed: {workflow_result.get('error_message')}")
+        if not session:
+            logger.error(f"Session {session_id} not found")
             return
-        
-        session_manager = await get_session_manager()
-        progress_monitor = get_progress_monitor()
-        
-        # Simulate the video generation workflow
-        # In a real implementation, this would call the actual agent coordination tools
-        
-        stages = [
-            (VideoGenerationStage.RESEARCHING, 15),
-            (VideoGenerationStage.SCRIPTING, 20),
-            (VideoGenerationStage.ASSET_SOURCING, 25),
-            (VideoGenerationStage.AUDIO_GENERATION, 20),
-            (VideoGenerationStage.VIDEO_ASSEMBLY, 15),
-            (VideoGenerationStage.FINALIZING, 5)
-        ]
-        
-        for stage, duration in stages:
-            # Advance to stage
-            await session_manager.update_stage_and_progress(session_id, stage, 0.0)
-            progress_monitor.advance_to_stage(session_id, stage)
-            
-            # Simulate processing with progress updates
-            for i in range(duration):
-                await asyncio.sleep(1)  # Simulate work
-                progress = (i + 1) / duration
-                progress_monitor.update_stage_progress(session_id, stage, progress)
-        
-        # Complete the session
-        await session_manager.update_stage_and_progress(session_id, VideoGenerationStage.COMPLETED, 1.0)
-        progress_monitor.complete_session(session_id, success=True)
-        
+
+        if ADK_AVAILABLE:
+            # Create ADK Runner with selected agent
+            runner = Runner(
+                agent=agent, app_name=app_name, session_service=session_service
+            )
+
+            # Create user message
+            user_message = Content(parts=[Part(text=f"Generate video: {prompt}")])
+
+            # Execute agent
+            logger.info(f"Invoking {agent.name} for session {session_id}")
+            async for event in runner.run_async(
+                user_id=session.user_id, session_id=session.id, new_message=user_message
+            ):
+                if event.is_final_response():
+                    logger.info(f"Agent completed processing for session {session_id}")
+                    # Update session state
+                    session.state["current_stage"] = "completed"
+                    session.state["progress"] = 1.0
+                    break
+        else:
+            # Mock processing
+            logger.info(f"Mock processing for session {session_id}")
+            await asyncio.sleep(2)
+            session.state["current_stage"] = "completed"
+            session.state["progress"] = 1.0
+
         logger.info(f"Completed video generation for session {session_id}")
-        
+
     except Exception as e:
-        logger.error(f"Error in background video generation for session {session_id}: {e}")
-        
-        # Mark session as failed
-        session_manager = await get_session_manager()
-        progress_monitor = get_progress_monitor()
-        
-        await session_manager.update_stage_and_progress(
-            session_id,
-            VideoGenerationStage.FAILED,
-            error_message=str(e)
-        )
-        progress_monitor.complete_session(session_id, success=False, error_message=str(e))
+        logger.error(f"Error in video generation for session {session_id}: {e}")
 
+        # Update session with error
+        try:
+            session = await session_service.get_session(
+                app_name=app_name,
+                user_id="default",  # or get from auth
+                session_id=session_id,
+            )
 
-# Error handlers
-
-@app.exception_handler(404)
-async def not_found_handler(request, exc):
-    """Handle 404 errors."""
-    return JSONResponse(
-        status_code=404,
-        content={"error": "Not found", "detail": "The requested resource was not found"}
-    )
-
-
-@app.exception_handler(500)
-async def internal_error_handler(request, exc):
-    """Handle 500 errors."""
-    logger.error(f"Internal server error: {exc}")
-    return JSONResponse(
-        status_code=500,
-        content={"error": "Internal server error", "detail": "An unexpected error occurred"}
-    )
+            if session:
+                session.state["current_stage"] = "failed"
+                session.state["error_message"] = str(e)
+                session.state["progress"] = 0.0
+        except Exception as update_error:
+            logger.error(f"Failed to update session state with error: {update_error}")
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

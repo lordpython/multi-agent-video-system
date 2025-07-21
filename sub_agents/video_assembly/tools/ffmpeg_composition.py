@@ -27,8 +27,6 @@ from video_system.shared_libraries import (
     ValidationError,
     TimeoutError,
     RetryConfig,
-    retry_with_exponential_backoff,
-    create_error_response,
     get_logger,
     log_error,
     with_resource_check
@@ -510,5 +508,6 @@ def check_ffmpeg_health() -> Dict[str, Any]:
         }
 
 
+from google.adk.tools import FunctionTool
 # Create the tool function for ADK
-ffmpeg_composition_tool = compose_video_with_ffmpeg
+ffmpeg_composition_tool = FunctionTool(compose_video_with_ffmpeg)

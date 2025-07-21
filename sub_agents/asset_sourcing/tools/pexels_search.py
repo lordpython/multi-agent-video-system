@@ -16,7 +16,7 @@
 
 import os
 import requests
-from typing import Dict, Any, List
+from typing import Dict, Any
 from pydantic import BaseModel, Field
 
 from video_system.shared_libraries import (
@@ -281,5 +281,6 @@ def check_pexels_health() -> Dict[str, Any]:
         }
 
 
+from google.adk.tools import FunctionTool
 # Create the tool function for ADK
-pexels_search_tool = search_pexels_media
+pexels_search_tool = FunctionTool(search_pexels_media)

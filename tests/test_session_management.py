@@ -20,13 +20,11 @@ import shutil
 import time
 import os
 from datetime import datetime, timedelta
-from pathlib import Path
 
 from video_system.shared_libraries import (
     SessionManager, ProgressMonitor, MaintenanceManager,
     VideoGenerationRequest, VideoStatus, SessionStage,
-    VideoScript, VideoScene, AssetCollection, AssetItem,
-    get_session_manager, get_progress_monitor, get_maintenance_manager
+    VideoScript, VideoScene
 )
 
 

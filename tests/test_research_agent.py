@@ -173,7 +173,7 @@ class TestResearchAgent:
     def test_agent_initialization(self):
         """Test that research agent is properly initialized."""
         assert research_agent.name == 'research_agent'
-        assert research_agent.model == 'gemini-2.5-flash'
+        assert research_agent.model == 'gemini-2.5-pro'
         assert len(research_agent.tools) == 1
         # The tool is now a function, so we check if it's callable
         assert callable(research_agent.tools[0])

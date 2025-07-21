@@ -113,7 +113,7 @@ def calculate_audio_timing(script_scenes: List[Dict[str, Any]], total_video_dura
 
 
 def convert_audio_format(
-    audio_data: bytes, 
+    audio_data_base64: str, 
     input_format: str = "wav", 
     output_format: str = "mp3", 
     bitrate: str = "128k"
@@ -122,7 +122,7 @@ def convert_audio_format(
     Convert audio data between different formats using FFmpeg.
     
     Args:
-        audio_data: Raw audio data to convert
+        audio_data_base64: Base64-encoded audio data to convert
         input_format: Input audio format
         output_format: Output audio format
         bitrate: Audio bitrate for compression
@@ -131,6 +131,18 @@ def convert_audio_format(
         Dict containing converted audio data and metadata
     """
     try:
+        # Decode base64 audio data
+        import base64
+        try:
+            audio_data = base64.b64decode(audio_data_base64)
+        except Exception as e:
+            return {
+                "converted_audio": b"",
+                "base64": "",
+                "error": f"Invalid base64 audio data: {str(e)}",
+                "status": "error"
+            }
+        
         if not audio_data:
             return {
                 "converted_audio": b"",
@@ -190,7 +202,6 @@ def convert_audio_format(
                 converted_audio = f.read()
             
             # Convert to base64 for storage/transmission
-            import base64
             base64_audio = base64.b64encode(converted_audio).decode('utf-8')
             
             return {
@@ -306,6 +317,7 @@ def synchronize_audio_with_video(
         }
 
 
+from google.adk.tools import FunctionTool
 # Create the tool functions for ADK
-audio_timing_tool = calculate_audio_timing
-audio_format_tool = convert_audio_format
+audio_timing_tool = FunctionTool(calculate_audio_timing)
+audio_format_tool = FunctionTool(convert_audio_format)

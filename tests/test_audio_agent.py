@@ -16,8 +16,6 @@
 
 import pytest
 from unittest.mock import Mock, patch, mock_open
-import tempfile
-import os
 from sub_agents.audio.tools.gemini_tts import generate_speech_with_gemini, convert_to_wav, parse_audio_mime_type
 from sub_agents.audio.tools.audio_processing import calculate_audio_timing, convert_audio_format
 from sub_agents.audio.agent import audio_agent
@@ -218,7 +216,10 @@ class TestAudioProcessingTools:
             
             mock_temp.return_value.__enter__.return_value.name = "temp_file"
             
-            result = convert_audio_format(b"original_audio_data", "wav", "mp3", "128k")
+            # Convert test data to base64
+            import base64
+            test_audio_base64 = base64.b64encode(b"original_audio_data").decode('utf-8')
+            result = convert_audio_format(test_audio_base64, "wav", "mp3", "128k")
             
             assert result["status"] == "success"
             assert result["input_format"] == "wav"
@@ -233,16 +234,20 @@ class TestAudioProcessingTools:
         # Mock FFmpeg not available
         mock_subprocess.side_effect = FileNotFoundError("FFmpeg not found")
         
+        import base64
         original_data = b"original_audio_data"
-        result = convert_audio_format(original_data, "wav", "mp3")
+        original_data_base64 = base64.b64encode(original_data).decode('utf-8')
+        result = convert_audio_format(original_data_base64, "wav", "mp3")
         
         assert result["status"] == "warning"
         assert "FFmpeg not available" in result["warning"]
-        assert result["converted_audio"] == original_data  # Should return original
+        assert result["converted_audio"] == original_data_base64  # Should return original
     
     def test_convert_audio_format_empty_data(self):
         """Test audio format conversion with empty data."""
-        result = convert_audio_format(b"", "wav", "mp3")
+        import base64
+        empty_data_base64 = base64.b64encode(b"").decode('utf-8')
+        result = convert_audio_format(empty_data_base64, "wav", "mp3")
         
         assert result["status"] == "error"
         assert "No audio data provided" in result["error"]
@@ -259,8 +264,10 @@ class TestAudioProcessingTools:
         with patch('tempfile.NamedTemporaryFile') as mock_temp:
             mock_temp.return_value.__enter__.return_value.name = "temp_file"
             
+            import base64
             original_data = b"original_audio_data"
-            result = convert_audio_format(original_data, "wav", "mp3")
+            original_data_base64 = base64.b64encode(original_data).decode('utf-8')
+            result = convert_audio_format(original_data_base64, "wav", "mp3")
             
             assert result["status"] == "error"
             assert "FFmpeg conversion failed" in result["error"]
@@ -273,7 +280,7 @@ class TestAudioAgent:
     def test_audio_agent_initialization(self):
         """Test that the audio agent is properly initialized."""
         assert audio_agent.name == "audio_agent"
-        assert audio_agent.model == "gemini-2.5-flash"
+        assert audio_agent.model == "gemini-2.5-pro"
         assert len(audio_agent.tools) == 3
         
         # Check tool functions

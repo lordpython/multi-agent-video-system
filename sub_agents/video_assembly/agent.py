@@ -15,7 +15,7 @@
 """Video Assembly Agent for combining all elements into final video with error handling."""
 
 from typing import Dict, Any
-from google.adk.agents import Agent
+from google.adk.agents import LlmAgent
 from .prompts import return_instructions_video_assembly
 from .tools import (
     ffmpeg_composition_tool,
@@ -27,9 +27,7 @@ from .tools.ffmpeg_composition import check_ffmpeg_health
 
 from video_system.shared_libraries import (
     get_health_monitor,
-    get_logger,
-    ProcessingError,
-    log_error
+    get_logger
 )
 
 # Configure logger for video assembly agent
@@ -82,9 +80,10 @@ health_monitor.service_registry.register_service(
 logger.info("Video assembly agent initialized with health monitoring")
 
 # Video Assembly Agent with FFmpeg tools for video composition and encoding with error handling
-video_assembly_agent = Agent(
-    model='gemini-2.5-flash',
+video_assembly_agent = LlmAgent(
+    model='gemini-2.5-pro',
     name='video_assembly_agent',
+    description='Combines all visual and audio assets into a final video product.',
     instruction=return_instructions_video_assembly(),
     tools=[
         video_synchronization_tool,

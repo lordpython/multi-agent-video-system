@@ -349,5 +349,6 @@ def estimate_encoding_time(duration_seconds: float, quality: str) -> float:
     return duration_seconds * multiplier
 
 
+from google.adk.tools import FunctionTool
 # Create the tool function for ADK
-video_encoding_tool = encode_video
+video_encoding_tool = FunctionTool(encode_video)

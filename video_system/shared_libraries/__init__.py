@@ -105,54 +105,14 @@ from .config_manager import (
     initialize_configuration,
 )
 
-from .adk_session_manager import (
-    VideoSystemSessionManager,
-    get_session_manager,
-    initialize_session_manager,
-)
+# Removed imports of deleted custom session management modules:
+# - adk_session_manager (deleted)
+# - adk_session_models (deleted) 
+# - progress_monitor (deleted)
+# - maintenance (deleted)
 
-from .adk_session_models import (
-    VideoGenerationState,
-    VideoGenerationStage,
-    SessionMetadata,
-)
-
-from .progress_monitor import (
-    ProgressMonitor,
-    StageProgress,
-    get_progress_monitor,
-    initialize_progress_monitor,
-    start_monitoring,
-    update_progress,
-    advance_stage,
-    complete_monitoring,
-    get_progress,
-)
-
-from .maintenance import (
-    MaintenanceManager,
-    CleanupStats,
-    SystemHealth,
-    get_maintenance_manager,
-    initialize_maintenance_manager,
-    run_maintenance,
-    get_system_health,
-    cleanup_session,
-    start_auto_maintenance,
-    stop_auto_maintenance,
-)
-
-from .concurrent_processor import (
-    ConcurrentProcessor,
-    RequestPriority,
-    ProcessorStatus,
-    QueuedRequest,
-    ProcessingTask,
-    ResourceLimits,
-    ProcessorMetrics,
-    get_concurrent_processor,
-    initialize_concurrent_processor,
-)
+# Removed concurrent_processor import - incompatible with simplified system
+# from .concurrent_processor import ...
 
 from .resource_manager import (
     ResourceManager,
@@ -275,47 +235,12 @@ __all__ = [
     'validate_system_configuration',
     'initialize_configuration',
     
-    # Session Management
-    'SessionManager',
-    'SessionData',
-    'ProjectState',
-    'SessionStage',
-    'get_session_manager',
-    'initialize_session_manager',
+    # Removed exports for deleted modules:
+    # - Session Management (adk_session_manager deleted)
+    # - Progress Monitoring (progress_monitor deleted)  
+    # - Maintenance (maintenance deleted)
     
-    # Progress Monitoring
-    'ProgressMonitor',
-    'StageProgress',
-    'get_progress_monitor',
-    'initialize_progress_monitor',
-    'start_monitoring',
-    'update_progress',
-    'advance_stage',
-    'complete_monitoring',
-    'get_progress',
-    
-    # Maintenance
-    'MaintenanceManager',
-    'CleanupStats',
-    'SystemHealth',
-    'get_maintenance_manager',
-    'initialize_maintenance_manager',
-    'run_maintenance',
-    'get_system_health',
-    'cleanup_session',
-    'start_auto_maintenance',
-    'stop_auto_maintenance',
-    
-    # Concurrent Processing
-    'ConcurrentProcessor',
-    'RequestPriority',
-    'ProcessorStatus',
-    'QueuedRequest',
-    'ProcessingTask',
-    'ResourceLimits',
-    'ProcessorMetrics',
-    'get_concurrent_processor',
-    'initialize_concurrent_processor',
+    # Removed concurrent processing exports - incompatible with simplified system
     
     # Resource Management
     'ResourceManager',

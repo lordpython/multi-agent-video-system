@@ -15,7 +15,6 @@
 
 """Simple configuration validation script for the multi-agent video system."""
 
-import os
 import sys
 from pathlib import Path
 

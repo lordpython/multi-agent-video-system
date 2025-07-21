@@ -14,9 +14,7 @@ the multi-agent video system, including:
 """
 
 import sys
-import os
 import time
-import asyncio
 from pathlib import Path
 
 # Add project root to path
@@ -25,7 +23,6 @@ sys.path.insert(0, str(project_root))
 
 from video_system.shared_libraries import (
     # Error classes
-    VideoSystemError,
     APIError,
     NetworkError,
     ValidationError,
@@ -42,7 +39,6 @@ from video_system.shared_libraries import (
     CircuitBreaker,
     
     # Monitoring and health
-    ServiceRegistry,
     ResourceMonitor,
     GracefulDegradation,
     RateLimiter,
@@ -51,7 +47,6 @@ from video_system.shared_libraries import (
     # Logging
     get_logger,
     initialize_logging,
-    log_error,
     create_error_response
 )
 

@@ -6,7 +6,6 @@ with the async agent functions.
 """
 
 import asyncio
-import json
 import logging
 import sys
 from pathlib import Path
@@ -122,7 +121,7 @@ async def main():
     
     # Summary
     all_passed = health_test and session_id is not None and status_test
-    logger.info(f"\nTest Results:")
+    logger.info("\nTest Results:")
     logger.info(f"  Health Check: {'PASSED' if health_test else 'FAILED'}")
     logger.info(f"  Video Generation: {'PASSED' if session_id else 'FAILED'}")
     logger.info(f"  Session Status: {'PASSED' if status_test else 'FAILED'}")

@@ -15,17 +15,16 @@
 """Comprehensive configuration management system for the multi-agent video system."""
 
 import os
-import sys
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Union, Type
-from dataclasses import dataclass, field
+from typing import Dict, Any, List, Optional
+from dataclasses import dataclass
 from enum import Enum
 import json
 import yaml
-from pydantic import BaseModel, Field, validator, ValidationError
+from pydantic import BaseModel, Field, validator
 from dotenv import load_dotenv
 
-from .error_handling import VideoSystemError, ConfigurationError
+from .error_handling import ConfigurationError
 from .logging_config import get_logger
 
 

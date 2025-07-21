@@ -16,7 +16,6 @@
 
 import pytest
 from unittest.mock import Mock, patch
-import requests
 from sub_agents.image_generation.tools.dalle_generation import generate_imagen_image
 from sub_agents.image_generation.tools.stable_diffusion import generate_stable_diffusion_image
 from sub_agents.image_generation.tools.prompt_optimizer import optimize_image_prompt, generate_style_variations
@@ -306,7 +305,7 @@ class TestImageGenerationAgent:
     def test_image_generation_agent_initialization(self):
         """Test that the image generation agent is properly initialized."""
         assert image_generation_agent.name == "image_generation_agent"
-        assert image_generation_agent.model == "gemini-2.5-flash"
+        assert image_generation_agent.model == "gemini-2.5-pro"
         assert len(image_generation_agent.tools) == 4
         
         # Check tool functions

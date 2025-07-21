@@ -18,23 +18,19 @@ This module provides additional resilience patterns including health checks,
 resource monitoring, and service degradation strategies.
 """
 
-import asyncio
 import psutil
 import threading
 import time
-from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, List, Optional, Union
+from datetime import datetime
+from typing import Any, Callable, Dict, Optional, Union
 from pydantic import BaseModel, Field
 from enum import Enum
 import json
-import os
 
 from .error_handling import (
-    VideoSystemError,
     ProcessingError,
     ResourceError,
-    get_logger,
-    log_error
+    get_logger
 )
 
 

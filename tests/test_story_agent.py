@@ -14,11 +14,6 @@
 
 """Tests for the Story Agent and its tools."""
 
-import pytest
-from unittest.mock import Mock, patch
-from video_system.shared_libraries.models import (
-    ResearchData, VideoScript, VideoScene, ScriptRequest
-)
 from sub_agents.story.tools.script_generator import (
     generate_video_script,
     create_scene_breakdown,
@@ -296,7 +291,7 @@ class TestStoryAgent:
     def test_story_agent_initialization(self):
         """Test that the story agent is properly initialized."""
         assert story_agent.name == "story_agent"
-        assert story_agent.model == "gemini-2.5-flash"
+        assert story_agent.model == "gemini-2.5-pro"
         assert len(story_agent.tools) == 4
         
         # Check tool functions

@@ -36,8 +36,6 @@ from video_system.shared_libraries import (
     ResourceThresholds,
     LoadTestConfig,
     LoadTestType,
-    RateLimitConfig,
-    ServiceLimits,
     get_logger
 )
 
@@ -594,7 +592,7 @@ class PerformanceValidator:
         print(f"End Time: {summary['validation_end_time']}")
         
         if "system_state" in summary and "error" not in summary["system_state"]:
-            print(f"\nSystem State:")
+            print("\nSystem State:")
             print(f"  CPU Usage: {summary['system_state']['cpu_percent']:.1f}%")
             print(f"  Memory Usage: {summary['system_state']['memory_percent']:.1f}%")
             print(f"  Processor Uptime: {summary['system_state']['processor_uptime']:.1f}s")

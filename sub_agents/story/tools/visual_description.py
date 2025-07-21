@@ -15,7 +15,7 @@
 """Visual description tools for generating detailed visual requirements for video scenes."""
 
 import re
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from pydantic import BaseModel, Field
 
 
@@ -426,11 +426,7 @@ def _get_audience_specific_requirements(audience: str) -> List[str]:
     return audience_map.get(audience.lower(), audience_map["general"])
 
 
+from google.adk.tools import FunctionTool
 # Create tool functions for ADK
-def visual_description_tool(scene_content: str, style: str = "professional", duration: float = 10.0) -> Dict[str, Any]:
-    """Generate detailed visual descriptions and requirements for a scene."""
-    return generate_visual_descriptions(scene_content, style, duration)
-
-def visual_enhancement_tool(existing_requirements: List[str], scene_context: str, target_audience: str = "general") -> Dict[str, Any]:
-    """Enhance existing visual requirements with more specific details."""
-    return enhance_visual_requirements(existing_requirements, scene_context, target_audience)
+visual_description_tool = FunctionTool(generate_visual_descriptions)
+visual_enhancement_tool = FunctionTool(enhance_visual_requirements)

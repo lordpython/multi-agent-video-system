@@ -14,12 +14,8 @@
 
 """Script generation tools for the Story Agent with comprehensive error handling."""
 
-import json
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from pydantic import BaseModel, Field
-from video_system.shared_libraries.models import (
-    VideoScript, VideoScene, ResearchData, ScriptRequest
-)
 from video_system.shared_libraries import (
     ValidationError,
     ProcessingError,
@@ -401,7 +397,7 @@ def _create_dialogue(content: List[str], tone: str, scene_num: int, total_scenes
     
     # Middle scenes
     else:
-        transition = f"Moving on to our next key point: " if scene_num > 1 else ""
+        transition = "Moving on to our next key point: " if scene_num > 1 else ""
         main_content = " ".join(content[:2])
         return f"{transition}{main_content}"
 
@@ -539,11 +535,7 @@ def _validate_scene_breakdown(scenes: List[Dict[str, Any]], target_duration: flo
     return errors
 
 
+from google.adk.tools import FunctionTool
 # Create tool functions for ADK
-def script_generation_tool(research_data: Dict[str, Any], target_duration: int = 60, style: str = "professional", tone: str = "informative") -> Dict[str, Any]:
-    """Generate a complete video script based on research data."""
-    return generate_video_script(research_data, target_duration, style, tone)
-
-def scene_breakdown_tool(script_content: str, target_duration: int = 60, scene_count: int = 5) -> Dict[str, Any]:
-    """Break down script content into individual scenes with timing and visual requirements."""
-    return create_scene_breakdown(script_content, target_duration, scene_count)
+script_generation_tool = FunctionTool(generate_video_script)
+scene_breakdown_tool = FunctionTool(create_scene_breakdown)

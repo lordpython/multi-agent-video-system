@@ -1,0 +1,83 @@
+{
+  "timestamp": "2025-07-19T18:51:59.126915",
+  "total_tests": 12,
+  "passed_tests": 12,
+  "failed_tests": 0,
+  "total_duration": 6.099247932434082,
+  "test_results": {
+    "Session Creation and Retrieval": {
+      "passed": true,
+      "duration": 0.0071413516998291016,
+      "error": null
+    },
+    "Event-Based State Updates": {
+      "passed": true,
+      "duration": 0.007550239562988281,
+      "error": null
+    },
+    "Session Listing and Pagination": {
+      "passed": true,
+      "duration": 0.025472402572631836,
+      "error": null
+    },
+    "Session Cleanup and Maintenance": {
+      "passed": true,
+      "duration": 0.01045536994934082,
+      "error": null
+    },
+    "Error Handling and Recovery": {
+      "passed": true,
+      "duration": 3.1874356269836426,
+      "error": null
+    },
+    "Performance and Monitoring": {
+      "passed": true,
+      "duration": 0.03439950942993164,
+      "error": null
+    },
+    "Migration Integration": {
+      "passed": true,
+      "duration": 0.0061109066009521484,
+      "error": null
+    },
+    "Agent Function Integration": {
+      "passed": true,
+      "duration": 1.014791488647461,
+      "error": null
+    },
+    "Orchestration Integration": {
+      "passed": true,
+      "duration": 0.0030035972595214844,
+      "error": null
+    },
+    "End-to-End Workflow": {
+      "passed": true,
+      "duration": 1.5189259052276611,
+      "error": null
+    },
+    "Advanced Error Scenarios": {
+      "passed": true,
+      "duration": 0.19762229919433594,
+      "error": null
+    },
+    "Performance Under Load": {
+      "passed": true,
+      "duration": 0.07840418815612793,
+      "error": null
+    }
+  },
+  "coverage_areas": [
+    "Session CRUD operations",
+    "Event-based state management",
+    "Session listing and pagination",
+    "Cleanup and maintenance",
+    "Error handling and recovery",
+    "Performance monitoring",
+    "Migration integration",
+    "Agent function integration",
+    "Orchestration integration",
+    "End-to-end workflows",
+    "Advanced error scenarios",
+    "Performance under load"
+  ]
+}

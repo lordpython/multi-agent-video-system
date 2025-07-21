@@ -16,9 +16,7 @@
 
 import os
 import requests
-import base64
-import time
-from typing import Dict, Any, List
+from typing import Dict, Any
 from pydantic import BaseModel, Field
 
 
@@ -183,5 +181,6 @@ def generate_stable_diffusion_image(
         }
 
 
+from google.adk.tools import FunctionTool
 # Create the tool function for ADK
-stable_diffusion_tool = generate_stable_diffusion_image
+stable_diffusion_tool = FunctionTool(generate_stable_diffusion_image)

@@ -15,7 +15,7 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 from video_system.shared_libraries.adk_session_manager import (
-    VideoSystemSessionManager, get_session_manager
+    get_session_manager
 )
 from video_system.shared_libraries.adk_session_models import VideoGenerationStage
 from video_system.shared_libraries.models import create_default_video_request
@@ -103,8 +103,8 @@ async def test_session_listing():
         assert len(sessions_page1) == 2, f"Expected 2 sessions on page 1, got {len(sessions_page1)}"
         assert pagination["total_count"] == 3, f"Expected total count 3, got {pagination['total_count']}"
         assert pagination["total_pages"] == 2, f"Expected 2 total pages, got {pagination['total_pages']}"
-        assert pagination["has_next"] == True, f"Expected has_next=True"
-        assert pagination["has_prev"] == False, f"Expected has_prev=False"
+        assert pagination["has_next"] == True, "Expected has_next=True"
+        assert pagination["has_prev"] == False, "Expected has_prev=False"
         
         # Test page 2
         paginated_result_page2 = await session_manager.list_sessions_paginated(
@@ -115,8 +115,8 @@ async def test_session_listing():
         
         logger.info(f"Page 2: {len(sessions_page2)} sessions")
         assert len(sessions_page2) == 1, f"Expected 1 session on page 2, got {len(sessions_page2)}"
-        assert pagination2["has_next"] == False, f"Expected has_next=False on page 2"
-        assert pagination2["has_prev"] == True, f"Expected has_prev=True on page 2"
+        assert pagination2["has_next"] == False, "Expected has_next=False on page 2"
+        assert pagination2["has_prev"] == True, "Expected has_prev=True on page 2"
         
         # Test 5: Combined filtering (user + status)
         user1_completed = await session_manager.list_sessions(
@@ -202,7 +202,7 @@ async def main():
     
     # Summary
     all_passed = listing_test and registry_test
-    logger.info(f"\nTest Results:")
+    logger.info("\nTest Results:")
     logger.info(f"  Session Listing: {'PASSED' if listing_test else 'FAILED'}")
     logger.info(f"  Registry Management: {'PASSED' if registry_test else 'FAILED'}")
     logger.info(f"  Overall: {'ALL TESTS PASSED' if all_passed else 'SOME TESTS FAILED'}")

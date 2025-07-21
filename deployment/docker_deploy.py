@@ -15,7 +15,6 @@
 
 """Docker deployment script for the multi-agent video system following ADK patterns."""
 
-import os
 import sys
 import subprocess
 import argparse
@@ -28,7 +27,7 @@ from typing import Dict, List, Optional
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from video_system.shared_libraries.config_manager import get_config_manager, validate_system_configuration
+from video_system.shared_libraries.config_manager import validate_system_configuration
 from video_system.shared_libraries.logging_config import get_logger
 
 

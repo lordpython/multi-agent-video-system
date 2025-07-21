@@ -187,7 +187,7 @@ async def main():
     
     # Summary
     all_passed = workflow_test and error_test
-    logger.info(f"\nIntegration Test Results:")
+    logger.info("\nIntegration Test Results:")
     logger.info(f"  Complete Workflow: {'PASSED' if workflow_test else 'FAILED'}")
     logger.info(f"  Error Handling: {'PASSED' if error_test else 'FAILED'}")
     logger.info(f"  Overall: {'ALL TESTS PASSED' if all_passed else 'SOME TESTS FAILED'}")

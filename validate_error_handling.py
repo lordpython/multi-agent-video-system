@@ -2,7 +2,6 @@
 """Simple validation script for error handling implementation."""
 
 import sys
-import os
 from pathlib import Path
 
 # Add project root to path
@@ -15,12 +14,7 @@ def test_error_classes():
         from video_system.shared_libraries.error_handling import (
             VideoSystemError,
             APIError,
-            NetworkError,
             ValidationError,
-            ProcessingError,
-            ResourceError,
-            RateLimitError,
-            TimeoutError,
             create_error_response
         )
         
@@ -71,7 +65,6 @@ def test_logging_config():
     try:
         from video_system.shared_libraries.logging_config import (
             StructuredFormatter,
-            VideoSystemLogger,
             get_logger,
             initialize_logging
         )
@@ -97,10 +90,8 @@ def test_resilience_components():
     try:
         from video_system.shared_libraries.resilience import (
             ServiceRegistry,
-            ResourceMonitor,
             GracefulDegradation,
-            RateLimiter,
-            HealthMonitor
+            RateLimiter
         )
         
         # Test service registry
