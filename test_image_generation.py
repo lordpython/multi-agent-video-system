@@ -6,7 +6,6 @@ Test script for the image generation agent that actually saves generated images 
 import os
 import sys
 import base64
-import asyncio
 from datetime import datetime
 
 # Add the src directory to Python path

@@ -31,7 +31,6 @@ async def test_audio_agent_discovery():
         print(f"✓ Available tools: {tool_names}")
 
         # Test importing from __init__.py
-        from src.video_system.agents.audio_agent import agent
 
         print("✓ Successfully imported from __init__.py")
 

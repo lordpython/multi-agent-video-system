@@ -55,7 +55,6 @@ from video_system.orchestration_tools_simplified import (
     coordinate_audio,
     coordinate_assembly
 )
-from video_system.agent_simplified import root_agent_simplified
 from video_system.api_simplified import app, session_service
 from fastapi.testclient import TestClient
 
@@ -657,12 +656,12 @@ class PerformanceValidator:
         print(f"Average Memory Delta: {avg_memory_delta:+.1f}MB")
         print(f"Average CPU Usage: {avg_cpu:.1f}%")
         
-        print(f"\nCode Reduction Achievements:")
+        print("\nCode Reduction Achievements:")
         print(f"  Lines Eliminated: {code_metrics['lines_eliminated']:,}")
         print(f"  Code Reduction: {code_metrics['code_reduction_percentage']:.1f}%")
         print(f"  Complexity Reduction: {code_metrics['complexity_reduction']}")
         
-        print(f"\nPerformance Improvements:")
+        print("\nPerformance Improvements:")
         print(f"  Memory Efficiency: {report['performance_validation_report']['memory_performance']['memory_efficiency']}")
         print(f"  System Performance: {report['performance_validation_report']['system_performance']['performance_rating']}")
         

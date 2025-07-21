@@ -3,7 +3,6 @@
 Script to verify and analyze the actual quality of generated video output.
 """
 
-import os
 import json
 from pathlib import Path
 

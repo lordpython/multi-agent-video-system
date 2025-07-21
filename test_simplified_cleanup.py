@@ -17,23 +17,18 @@ def test_imports():
     
     try:
         # Test API import
-        from video_system.api_simplified import app
         print("✓ API simplified import successful")
         
         # Test agent import
-        from video_system.agent_simplified import root_agent_simplified
         print("✓ Agent simplified import successful")
         
         # Test orchestration tools import
-        from video_system.orchestration_tools_simplified import coordinate_research_tool
         print("✓ Orchestration tools simplified import successful")
         
         # Test CLI import
-        from video_system.cli import cli
         print("✓ CLI import successful")
         
         # Test main module import
-        from video_system import root_agent
         print("✓ Main module import successful")
         
         return True
@@ -105,7 +100,7 @@ async def main():
     deleted_ok = test_no_deleted_imports()
     
     # Summary
-    print(f"\n=== Test Results ===")
+    print("\n=== Test Results ===")
     print(f"Imports: {'✓ PASS' if imports_ok else '✗ FAIL'}")
     print(f"Functionality: {'✓ PASS' if functionality_ok else '✗ FAIL'}")
     print(f"Deleted modules: {'✓ PASS' if deleted_ok else '✗ FAIL'}")

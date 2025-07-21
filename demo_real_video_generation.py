@@ -45,7 +45,7 @@ async def generate_real_video(prompt: str, user_id: str = "demo_user"):
     # Create user message with explicit instruction
     user_message = Content(parts=[Part(text=f"Generate a video about: {prompt}")])
     
-    print(f"🚀 Starting video generation workflow...")
+    print("🚀 Starting video generation workflow...")
     print("This may take several minutes as we:")
     print("  1. Research your topic")
     print("  2. Generate AI script")

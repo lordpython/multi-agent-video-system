@@ -8,7 +8,6 @@ and can access/modify session state through the context object.
 import asyncio
 import sys
 from pathlib import Path
-from datetime import datetime, timezone
 
 # Add the project root to Python path
 project_root = Path(__file__).parent

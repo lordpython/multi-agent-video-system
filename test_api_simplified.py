@@ -11,7 +11,6 @@ sys.path.insert(0, str(project_root))
 
 from video_system.api_simplified import app, session_service
 from fastapi.testclient import TestClient
-import pytest
 
 
 def test_api_imports():

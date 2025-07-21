@@ -6,7 +6,6 @@ Test script to verify the research agent can be discovered and run independently
 import sys
 import os
 import asyncio
-from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types

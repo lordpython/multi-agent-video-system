@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Orchestration agent for the multi-agent video generation system."""
+"""Video Orchestrator Agent - Coordinates the entire video generation process."""
 
 from google.adk.agents import SequentialAgent
-from sub_agents.research.agent import research_agent
-from sub_agents.story.agent import story_agent
-from sub_agents.asset_sourcing.agent import asset_sourcing_agent
-from sub_agents.image_generation.agent import image_generation_agent
-from sub_agents.audio.agent import audio_agent
-from sub_agents.video_assembly.agent import video_assembly_agent
 
+# Import all sub-agents from their canonical locations
+from video_system.agents.research_agent.agent import research_agent
+from video_system.agents.story_agent.agent import story_agent
+from video_system.agents.asset_sourcing_agent.agent import asset_sourcing_agent
+from video_system.agents.image_generation_agent.agent import image_generation_agent
+from video_system.agents.audio_agent.agent import audio_agent
+from video_system.agents.video_assembly_agent.agent import video_assembly_agent
 
-# Root agent orchestrating the video generation process sequentially.
+# Root agent orchestrating the video generation process sequentially
 root_agent = SequentialAgent(
     name='video_system_orchestrator',
     description='Orchestrates the entire video generation process by running sub-agents in sequence.',

@@ -131,21 +131,21 @@ async def test_validation_patterns():
         try:
             await coordinate_research("")
             assert False, "Should have failed with empty topic"
-        except ValueError as e:
+        except ValueError:
             print("✓ Empty topic validation works")
         
         # Test invalid duration validation
         try:
             await coordinate_story({}, duration=5)  # Too short
             assert False, "Should have failed with invalid duration"
-        except ValueError as e:
+        except ValueError:
             print("✓ Duration validation works")
         
         # Test missing data validation
         try:
             await coordinate_story({}, duration=60)  # No research data
             assert False, "Should have failed with missing research data"
-        except ValueError as e:
+        except ValueError:
             print("✓ Missing research data validation works")
         
         print("\n✅ All validation tests passed!")

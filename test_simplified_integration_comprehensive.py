@@ -12,10 +12,8 @@ This test suite validates all aspects of the simplified implementation:
 import asyncio
 import sys
 import json
-import tempfile
 from pathlib import Path
 from datetime import datetime, timezone
-from typing import Dict, Any
 
 # Add the project root to Python path
 project_root = Path(__file__).parent
@@ -36,12 +34,7 @@ from video_system.orchestration_tools_simplified import (
     coordinate_story,
     coordinate_assets,
     coordinate_audio,
-    coordinate_assembly,
-    coordinate_research_tool,
-    coordinate_story_tool,
-    coordinate_assets_tool,
-    coordinate_audio_tool,
-    coordinate_assembly_tool
+    coordinate_assembly
 )
 from video_system.agent_simplified import root_agent_simplified
 from video_system.api_simplified import app, session_service
@@ -69,7 +62,7 @@ class TestResults:
         print(f"\n{'='*60}")
         print(f"TEST SUMMARY: {self.passed}/{total} passed")
         if self.errors:
-            print(f"\nFAILURES:")
+            print("\nFAILURES:")
             for error in self.errors:
                 print(f"  - {error}")
         print(f"{'='*60}")
