@@ -20,7 +20,7 @@ import json
 import requests
 from unittest.mock import Mock, patch
 
-from video_system.shared_libraries import (
+from video_system.utils.error_handling import (
     VideoSystemError,
     APIError,
     ValidationError,
@@ -38,11 +38,11 @@ from video_system.shared_libraries import (
     HealthMonitor
 )
 
-from sub_agents.research.tools.web_search import web_search, search_with_fallback
-from sub_agents.story.tools.script_generator import generate_video_script, create_scene_breakdown
-from sub_agents.asset_sourcing.tools.pexels_search import search_pexels_media
-from sub_agents.audio.tools.gemini_tts import generate_speech_with_gemini
-from sub_agents.video_assembly.tools.ffmpeg_composition import compose_video_with_ffmpeg, VideoCompositionRequest
+from video_system.tools.research_tools import web_search, search_with_fallback
+from video_system.tools.story_tools import generate_video_script, create_scene_breakdown
+from video_system.tools.asset_tools import search_pexels_media
+from video_system.tools.audio_tools import generate_speech_with_gemini
+from video_system.tools.video_tools import compose_video_with_ffmpeg, VideoCompositionRequest
 
 
 class TestErrorHandling:

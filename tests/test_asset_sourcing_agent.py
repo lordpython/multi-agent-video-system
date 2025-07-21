@@ -17,10 +17,12 @@
 import pytest
 from unittest.mock import Mock, patch
 import requests
-from sub_agents.asset_sourcing.tools.pexels_search import search_pexels_media
-from sub_agents.asset_sourcing.tools.unsplash_search import search_unsplash_photos
-from sub_agents.asset_sourcing.tools.pixabay_search import search_pixabay_media
-from sub_agents.asset_sourcing.agent import asset_sourcing_agent
+from video_system.tools.asset_tools import (
+    search_pexels_media,
+    search_unsplash_photos,
+    search_pixabay_media
+)
+from video_system.agents.asset_sourcing_agent.agent import root_agent as asset_sourcing_agent
 
 
 class TestPexelsSearchTool:

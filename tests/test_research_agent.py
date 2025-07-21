@@ -17,8 +17,8 @@
 import pytest
 from unittest.mock import Mock, patch
 import requests
-from sub_agents.research.tools.web_search import web_search
-from sub_agents.research.agent import research_agent
+from video_system.tools.research_tools import web_search
+from video_system.agents.research_agent.agent import root_agent as research_agent
 
 
 class TestSerperWebSearchTool:

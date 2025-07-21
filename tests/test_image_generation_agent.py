@@ -16,10 +16,13 @@
 
 import pytest
 from unittest.mock import Mock, patch
-from sub_agents.image_generation.tools.dalle_generation import generate_imagen_image
-from sub_agents.image_generation.tools.stable_diffusion import generate_stable_diffusion_image
-from sub_agents.image_generation.tools.prompt_optimizer import optimize_image_prompt, generate_style_variations
-from sub_agents.image_generation.agent import image_generation_agent
+from video_system.tools.image_tools import (
+    generate_imagen_image,
+    generate_stable_diffusion_image,
+    optimize_image_prompt,
+    generate_style_variations
+)
+from video_system.agents.image_generation_agent.agent import root_agent as image_generation_agent
 
 
 class TestImagenGenerationTool:

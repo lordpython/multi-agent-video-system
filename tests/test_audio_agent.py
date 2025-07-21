@@ -16,9 +16,14 @@
 
 import pytest
 from unittest.mock import Mock, patch, mock_open
-from sub_agents.audio.tools.gemini_tts import generate_speech_with_gemini, convert_to_wav, parse_audio_mime_type
-from sub_agents.audio.tools.audio_processing import calculate_audio_timing, convert_audio_format
-from sub_agents.audio.agent import audio_agent
+from video_system.tools.audio_tools import (
+    generate_speech_with_gemini,
+    convert_to_wav,
+    parse_audio_mime_type,
+    calculate_audio_timing,
+    convert_audio_format
+)
+from video_system.agents.audio_agent.agent import root_agent as audio_agent
 
 
 class TestGeminiTTSTool:

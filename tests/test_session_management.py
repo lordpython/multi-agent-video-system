@@ -21,8 +21,10 @@ import time
 import os
 from datetime import datetime, timedelta
 
-from video_system.shared_libraries import (
-    SessionManager, ProgressMonitor, MaintenanceManager,
+from video_system.utils.session_management import (
+    SessionManager, ProgressMonitor, MaintenanceManager
+)
+from video_system.utils.models import (
     VideoGenerationRequest, VideoStatus, SessionStage,
     VideoScript, VideoScene
 )

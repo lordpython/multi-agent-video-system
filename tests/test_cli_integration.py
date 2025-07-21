@@ -24,9 +24,9 @@ from unittest.mock import Mock, patch
 import pytest
 from click.testing import CliRunner
 
-from video_system.cli import cli
-from video_system.shared_libraries.models import VideoGenerationRequest, VideoStatus
-from video_system.shared_libraries.adk_session_models import VideoGenerationStage as SessionStage
+from video_system.api.cli import cli
+from video_system.utils.models import VideoGenerationRequest, VideoStatus
+from video_system.utils.adk_session_models import VideoGenerationStage as SessionStage
 
 
 @pytest.fixture

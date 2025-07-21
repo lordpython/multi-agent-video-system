@@ -17,7 +17,7 @@
 import pytest
 from unittest.mock import patch
 
-from video_system.orchestration_tools import (
+from video_system.tools.orchestration_tools import (
     coordinate_research,
     coordinate_story,
     coordinate_assets,
@@ -28,7 +28,7 @@ from video_system.orchestration_tools import (
     get_session_state,
     session_states
 )
-from video_system.shared_libraries.models import (
+from video_system.utils.models import (
     VideoGenerationRequest,
     VideoStyle,
     VideoQuality,
@@ -39,7 +39,7 @@ from video_system.shared_libraries.models import (
     AssetItem,
     AudioAssets
 )
-from video_system.agent import root_agent
+from video_system.agents.video_orchestrator.agent import root_agent
 
 
 class TestOrchestrationTools:

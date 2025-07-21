@@ -19,20 +19,14 @@ import os
 import tempfile
 import shutil
 from unittest.mock import Mock, patch
-from sub_agents.video_assembly.agent import video_assembly_agent
-from sub_agents.video_assembly.tools.ffmpeg_composition import (
+from video_system.agents.video_assembly_agent.agent import root_agent as video_assembly_agent
+from video_system.tools.video_tools import (
     compose_video_with_ffmpeg,
-    VideoCompositionRequest
-)
-from sub_agents.video_assembly.tools.video_synchronization import (
+    VideoCompositionRequest,
     synchronize_video_timeline,
-    SynchronizationRequest
-)
-from sub_agents.video_assembly.tools.transition_effects import (
+    SynchronizationRequest,
     apply_video_transitions,
-    TransitionRequest
-)
-from sub_agents.video_assembly.tools.video_encoding import (
+    TransitionRequest,
     encode_video,
     EncodingRequest
 )
@@ -310,7 +304,7 @@ class TestVideoAssemblyUtilities:
     
     def test_transition_suggestion(self):
         """Test transition suggestion based on content."""
-        from sub_agents.video_assembly.tools.transition_effects import suggest_transition_for_content
+        from video_system.tools.video_tools import suggest_transition_for_content
         
         assert suggest_transition_for_content("dramatic action scene") == "zoom"
         assert suggest_transition_for_content("peaceful landscape") == "dissolve"
@@ -320,7 +314,7 @@ class TestVideoAssemblyUtilities:
     
     def test_optimal_transition_duration(self):
         """Test optimal transition duration calculation."""
-        from sub_agents.video_assembly.tools.transition_effects import calculate_optimal_transition_duration
+        from video_system.tools.video_tools import calculate_optimal_transition_duration
         
         # Test various segment durations
         assert calculate_optimal_transition_duration(10.0) == 0.75  # 7.5% of 10s
@@ -329,7 +323,7 @@ class TestVideoAssemblyUtilities:
     
     def test_encoding_recommendations(self):
         """Test encoding recommendation system."""
-        from sub_agents.video_assembly.tools.video_encoding import get_recommended_settings
+        from video_system.tools.video_tools import get_recommended_settings
         
         web_settings = get_recommended_settings(150.0, "web")
         assert web_settings["optimize_for"] == "size"
@@ -344,7 +338,7 @@ class TestVideoAssemblyUtilities:
     
     def test_encoding_time_estimation(self):
         """Test encoding time estimation."""
-        from sub_agents.video_assembly.tools.video_encoding import estimate_encoding_time
+        from video_system.tools.video_tools import estimate_encoding_time
         
         # Test different quality levels
         assert estimate_encoding_time(60.0, "low") == 30.0    # 2x realtime

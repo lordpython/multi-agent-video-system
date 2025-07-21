@@ -23,8 +23,8 @@ import tempfile
 from unittest.mock import Mock, patch, AsyncMock
 
 from fastapi.testclient import TestClient
-from video_system.api import app
-from video_system.shared_libraries.models import VideoGenerationRequest, VideoStatus
+from video_system.api.endpoints import app
+from video_system.utils.models import VideoGenerationRequest, VideoStatus
 
 
 @pytest.fixture

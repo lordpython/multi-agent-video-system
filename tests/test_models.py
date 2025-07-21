@@ -16,7 +16,7 @@
 
 import pytest
 from pydantic import ValidationError
-from video_system.shared_libraries.models import (
+from video_system.utils.models import (
     VideoGenerationRequest,
     VideoScript,
     VideoScene,
@@ -469,7 +469,7 @@ class TestValidationUtilities:
     
     def test_validate_video_duration(self):
         """Test video duration validation utility."""
-        from video_system.shared_libraries.models import validate_video_duration
+        from video_system.utils.models import validate_video_duration
         
         # Valid durations
         assert validate_video_duration(10) is True
@@ -484,7 +484,7 @@ class TestValidationUtilities:
     
     def test_validate_scene_duration(self):
         """Test scene duration validation utility."""
-        from video_system.shared_libraries.models import validate_scene_duration
+        from video_system.utils.models import validate_scene_duration
         
         # Valid durations
         assert validate_scene_duration(0.1) is True
@@ -498,7 +498,7 @@ class TestValidationUtilities:
     
     def test_validate_prompt_length(self):
         """Test prompt length validation utility."""
-        from video_system.shared_libraries.models import validate_prompt_length
+        from video_system.utils.models import validate_prompt_length
         
         # Valid prompts
         assert validate_prompt_length("This is a valid prompt for testing") is True
@@ -513,7 +513,7 @@ class TestValidationUtilities:
     
     def test_validate_asset_url(self):
         """Test asset URL validation utility."""
-        from video_system.shared_libraries.models import validate_asset_url
+        from video_system.utils.models import validate_asset_url
         
         # Valid URLs
         assert validate_asset_url("https://example.com/image.jpg") is True
@@ -527,7 +527,7 @@ class TestValidationUtilities:
     
     def test_validate_scene_sequence(self):
         """Test scene sequence validation utility."""
-        from video_system.shared_libraries.models import validate_scene_sequence
+        from video_system.utils.models import validate_scene_sequence
         
         # Valid sequences
         scenes_valid = [
@@ -576,7 +576,7 @@ class TestHelperFunctions:
     
     def test_generate_session_id(self):
         """Test session ID generation."""
-        from video_system.shared_libraries.models import generate_session_id
+        from video_system.utils.models import generate_session_id
         
         # Generate multiple IDs and ensure they're unique
         id1 = generate_session_id()
@@ -590,7 +590,7 @@ class TestHelperFunctions:
     
     def test_calculate_total_duration(self):
         """Test total duration calculation."""
-        from video_system.shared_libraries.models import calculate_total_duration
+        from video_system.utils.models import calculate_total_duration
         
         scenes = [
             VideoScene(
@@ -617,7 +617,7 @@ class TestHelperFunctions:
     
     def test_create_default_video_request(self):
         """Test default video request creation."""
-        from video_system.shared_libraries.models import create_default_video_request
+        from video_system.utils.models import create_default_video_request
         
         request = create_default_video_request("Test prompt for video generation")
         
@@ -629,7 +629,7 @@ class TestHelperFunctions:
     
     def test_create_video_status(self):
         """Test video status creation."""
-        from video_system.shared_libraries.models import create_video_status
+        from video_system.utils.models import create_video_status
         
         # Default status
         status = create_video_status("session123")
@@ -647,7 +647,7 @@ class TestHelperFunctions:
     
     def test_get_asset_by_type(self):
         """Test asset filtering by type."""
-        from video_system.shared_libraries.models import get_asset_by_type
+        from video_system.utils.models import get_asset_by_type
         
         assets = [
             AssetItem(
@@ -683,7 +683,7 @@ class TestHelperFunctions:
     
     def test_validate_video_script_consistency(self):
         """Test video script consistency validation."""
-        from video_system.shared_libraries.models import validate_video_script_consistency
+        from video_system.utils.models import validate_video_script_consistency
         
         # Valid script
         scenes_valid = [

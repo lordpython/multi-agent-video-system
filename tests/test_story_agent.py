@@ -14,19 +14,17 @@
 
 """Tests for the Story Agent and its tools."""
 
-from sub_agents.story.tools.script_generator import (
+from video_system.tools.story_tools import (
     generate_video_script,
     create_scene_breakdown,
     _generate_title,
-    _create_scenes_from_research
-)
-from sub_agents.story.tools.visual_description import (
+    _create_scenes_from_research,
     generate_visual_descriptions,
     enhance_visual_requirements,
     _extract_visual_elements as extract_visual_elements_vd,
     _get_style_requirements
 )
-from sub_agents.story.agent import story_agent
+from video_system.agents.story_agent.agent import root_agent as story_agent
 
 
 class TestScriptGeneration:
