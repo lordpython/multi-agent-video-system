@@ -22,93 +22,109 @@ from pydantic import BaseModel, Field
 
 class PixabaySearchInput(BaseModel):
     """Input schema for Pixabay search tool."""
+
     query: str = Field(description="The search query for finding images/videos")
-    per_page: int = Field(default=15, description="Number of results per page (max 200)")
-    media_type: str = Field(default="photo", description="Type of media: 'photo', 'illustration', 'vector', 'video'")
-    orientation: str = Field(default="all", description="Image orientation: 'all', 'horizontal', 'vertical'")
+    per_page: int = Field(
+        default=15, description="Number of results per page (max 200)"
+    )
+    media_type: str = Field(
+        default="photo",
+        description="Type of media: 'photo', 'illustration', 'vector', 'video'",
+    )
+    orientation: str = Field(
+        default="all", description="Image orientation: 'all', 'horizontal', 'vertical'"
+    )
     category: str = Field(default="", description="Image category filter")
 
 
-def search_pixabay_media(query: str, per_page: int = 15, media_type: str = "photo", orientation: str = "all", category: str = "") -> Dict[str, Any]:
+def search_pixabay_media(
+    query: str,
+    per_page: int = 15,
+    media_type: str = "photo",
+    orientation: str = "all",
+    category: str = "",
+) -> Dict[str, Any]:
     """
     Search Pixabay for high-quality stock photos, illustrations, vectors, and videos.
-    
+
     Args:
         query: The search query for finding media
         per_page: Number of results per page (max 200)
         media_type: Type of media to search for ('photo', 'illustration', 'vector', 'video')
         orientation: Image orientation filter ('all', 'horizontal', 'vertical')
         category: Category filter for images
-        
+
     Returns:
         Dict containing search results with media URLs, metadata, and usage rights
     """
     api_key = os.getenv("PIXABAY_API_KEY")
     if not api_key:
         return {
-            "results": [{
-                "id": "error",
-                "webformatURL": "",
-                "largeImageURL": "",
-                "previewURL": "",
-                "user": "Configuration Error",
-                "userImageURL": "",
-                "tags": "PIXABAY_API_KEY environment variable is not set",
-                "usage_rights": "error",
-                "source": "pixabay"
-            }],
+            "results": [
+                {
+                    "id": "error",
+                    "webformatURL": "",
+                    "largeImageURL": "",
+                    "previewURL": "",
+                    "user": "Configuration Error",
+                    "userImageURL": "",
+                    "tags": "PIXABAY_API_KEY environment variable is not set",
+                    "usage_rights": "error",
+                    "source": "pixabay",
+                }
+            ],
             "total_results": 0,
             "search_query": query,
             "per_page": per_page,
-            "source": "pixabay"
+            "source": "pixabay",
         }
-    
+
     # Determine API endpoint based on media type
     if media_type == "video":
         base_url = "https://pixabay.com/api/videos/"
     else:
         base_url = "https://pixabay.com/api/"
-    
+
     try:
         params = {
             "key": api_key,
             "q": query,
             "per_page": min(per_page, 200),  # Pixabay API max is 200
             "safesearch": "true",
-            "page": 1
+            "page": 1,
         }
-        
+
         # Add media type filter for images
         if media_type in ["photo", "illustration", "vector"]:
             params["image_type"] = media_type
-        
+
         # Add orientation filter
         if orientation in ["horizontal", "vertical"]:
             params["orientation"] = orientation
-        
+
         # Add category filter if specified
         if category:
             params["category"] = category
-        
-        response = requests.get(
-            base_url,
-            params=params,
-            timeout=30
-        )
+
+        response = requests.get(base_url, params=params, timeout=30)
         response.raise_for_status()
-        
+
         data = response.json()
-        
+
         # Extract and format search results
         results = []
         hits = data.get("hits", [])
-        
+
         for item in hits:
             if media_type == "video":
                 # Format video results
                 videos = item.get("videos", {})
-                large_video = videos.get("large", {}) or videos.get("medium", {}) or videos.get("small", {})
-                
+                large_video = (
+                    videos.get("large", {})
+                    or videos.get("medium", {})
+                    or videos.get("small", {})
+                )
+
                 formatted_result = {
                     "id": str(item.get("id", "")),
                     "pageURL": item.get("pageURL", ""),
@@ -125,11 +141,11 @@ def search_pixabay_media(query: str, per_page: int = 15, media_type: str = "phot
                     "video_size": {
                         "width": large_video.get("width", 0),
                         "height": large_video.get("height", 0),
-                        "size": large_video.get("size", 0)
+                        "size": large_video.get("size", 0),
                     },
                     "usage_rights": "Free for commercial and personal use. No attribution required, but appreciated.",
                     "source": "pixabay",
-                    "media_type": "video"
+                    "media_type": "video",
                 }
             else:
                 # Format image results
@@ -137,7 +153,10 @@ def search_pixabay_media(query: str, per_page: int = 15, media_type: str = "phot
                     "id": str(item.get("id", "")),
                     "pageURL": item.get("pageURL", ""),
                     "webformatURL": item.get("webformatURL", ""),
-                    "largeImageURL": item.get("largeImageURL", item.get("fullHDURL", item.get("webformatURL", ""))),
+                    "largeImageURL": item.get(
+                        "largeImageURL",
+                        item.get("fullHDURL", item.get("webformatURL", "")),
+                    ),
                     "previewURL": item.get("previewURL", ""),
                     "user": item.get("user", ""),
                     "userImageURL": item.get("userImageURL", ""),
@@ -155,19 +174,19 @@ def search_pixabay_media(query: str, per_page: int = 15, media_type: str = "phot
                     "webformatHeight": item.get("webformatHeight", 0),
                     "usage_rights": "Free for commercial and personal use. No attribution required, but appreciated.",
                     "source": "pixabay",
-                    "media_type": "image"
+                    "media_type": "image",
                 }
-            
+
             results.append(formatted_result)
-        
+
         return {
             "results": results,
             "total_results": data.get("total", len(results)),
             "search_query": query,
             "per_page": per_page,
-            "source": "pixabay"
+            "source": "pixabay",
         }
-        
+
     except requests.exceptions.RequestException as e:
         error_result = {
             "id": "error",
@@ -178,17 +197,17 @@ def search_pixabay_media(query: str, per_page: int = 15, media_type: str = "phot
             "userImageURL": "",
             "tags": f"Failed to search Pixabay: {str(e)}",
             "usage_rights": "error",
-            "source": "pixabay"
+            "source": "pixabay",
         }
-        
+
         return {
             "results": [error_result],
             "total_results": 0,
             "search_query": query,
             "per_page": per_page,
-            "source": "pixabay"
+            "source": "pixabay",
         }
-    
+
     except Exception as e:
         error_result = {
             "id": "error",
@@ -199,18 +218,19 @@ def search_pixabay_media(query: str, per_page: int = 15, media_type: str = "phot
             "userImageURL": "",
             "tags": f"An unexpected error occurred: {str(e)}",
             "usage_rights": "error",
-            "source": "pixabay"
+            "source": "pixabay",
         }
-        
+
         return {
             "results": [error_result],
             "total_results": 0,
             "search_query": query,
             "per_page": per_page,
-            "source": "pixabay"
+            "source": "pixabay",
         }
 
 
 from google.adk.tools import FunctionTool
+
 # Create the tool function for ADK
 pixabay_search_tool = FunctionTool(search_pixabay_media)

@@ -16,24 +16,34 @@
 
 import sys
 import os
+
 # Add the src directory to the Python path for video_system modules
-src_path = os.path.join(os.path.dirname(__file__), '..', '..', '..')
+src_path = os.path.join(os.path.dirname(__file__), "..", "..", "..")
 sys.path.insert(0, src_path)
 # Add the project root to the Python path for video_system.shared_libraries
-project_root = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')
+project_root = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
 sys.path.insert(0, project_root)
 
-from google.adk.agents import LlmAgent
+try:
+    from google.adk.agents import Agent
+    ADK_AVAILABLE = True
+except ImportError:
+    ADK_AVAILABLE = False
+    # Define mock class for environments without ADK
+    class Agent:
+        def __init__(self, **kwargs):
+            pass
 from video_system.tools.image_tools import (
     imagen_generation_tool,
     stable_diffusion_tool,
     prompt_optimizer_tool,
-    style_variations_tool
+    style_variations_tool,
 )
+
 
 def return_instructions_image_generation() -> str:
     """Return instruction prompts for the image generation agent."""
-    
+
     instruction_prompt = """
     You are an Image Generation Agent specialized in creating custom visual 
     assets for video content using AI image generation models. Your role is to:
@@ -54,15 +64,17 @@ def return_instructions_image_generation() -> str:
     Your output should provide the Video Assembly agent with custom visual 
     assets that perfectly match the video's narrative and style requirements.
     """
-    
+
     return instruction_prompt
+
 
 def image_health_check() -> dict:
     """Health check for image generation services."""
     return {
         "status": "healthy",
-        "details": {"message": "Image generation services are operational"}
+        "details": {"message": "Image generation services are operational"},
     }
+
 
 from video_system.utils.resilience import get_health_monitor
 from video_system.utils.logging_config import get_logger
@@ -76,21 +88,26 @@ health_monitor.service_registry.register_service(
     service_name="image_generation",
     health_check_func=image_health_check,
     health_check_interval=300,  # Check every 5 minutes
-    critical=False  # Not critical since we have fallbacks
+    critical=False,  # Not critical since we have fallbacks
 )
 
 logger.info("Image generation agent initialized with health monitoring")
 
 # Image Generation Agent with AI image generation tools
-root_agent = LlmAgent(
-    model='gemini-2.5-pro',
-    name='image_generation_agent',
-    description='Creates custom visual assets for video content using various AI image generation models.',
-    instruction=return_instructions_image_generation(),
-    tools=[
-        imagen_generation_tool,
-        stable_diffusion_tool,
-        prompt_optimizer_tool,
-        style_variations_tool
-    ]
-)
+if ADK_AVAILABLE:
+    root_agent = Agent(
+        model="gemini-2.5-pro",
+        name="image_generation_agent",
+        description="Creates custom visual assets for video content using various AI image generation models.",
+        instruction=return_instructions_image_generation(),
+        tools=[
+            imagen_generation_tool,
+            stable_diffusion_tool,
+            prompt_optimizer_tool,
+            style_variations_tool,
+        ],
+    )
+else:
+    # Fallback for environments without ADK
+    root_agent = None
+    logger.warning("ADK not available - image generation agent disabled")

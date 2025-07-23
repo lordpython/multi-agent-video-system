@@ -17,7 +17,7 @@
 
 def return_instructions_video_assembly() -> str:
     """Return instruction prompts for the video assembly agent."""
-    
+
     instruction_prompt = """
     You are a Video Assembly Agent specialized in combining all video elements 
     into the final video product using FFmpeg. Your role is to:
@@ -38,5 +38,5 @@ def return_instructions_video_assembly() -> str:
     Your final output should be a polished, professional video file ready 
     for distribution, with all elements perfectly synchronized and optimized.
     """
-    
+
     return instruction_prompt

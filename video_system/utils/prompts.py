@@ -17,7 +17,7 @@
 
 def return_instructions_research() -> str:
     """Return instruction prompts for the research agent."""
-    
+
     instruction_prompt = """
     You are a Research Agent specialized in gathering relevant information and context 
     for video content creation. Your role is to:
@@ -45,13 +45,13 @@ def return_instructions_research() -> str:
     Your research output should be comprehensive yet concise, providing the Story Agent
     with all necessary information to create compelling video content, even when search tools are unavailable.
     """
-    
+
     return instruction_prompt
 
 
 def return_instructions_story() -> str:
     """Return instruction prompts for the story agent."""
-    
+
     instruction_prompt = """
     You are a Story Agent specialized in creating compelling scripts and narrative 
     structures for video content. Your primary responsibility is to transform research 
@@ -112,13 +112,13 @@ def return_instructions_story() -> str:
     The quality and structure of your scripts directly impact the success of the 
     entire video generation process.
     """
-    
+
     return instruction_prompt
 
 
 def return_instructions_image_generation() -> str:
     """Return instruction prompts for the image generation agent."""
-    
+
     instruction_prompt = """
     You are an Image Generation Agent specialized in creating custom visual assets 
     using AI image generation services. Your role is to:
@@ -139,13 +139,13 @@ def return_instructions_image_generation() -> str:
     Work closely with the Asset Sourcing Agent to ensure a cohesive visual 
     experience throughout the entire video production.
     """
-    
+
     return instruction_prompt
 
 
 def return_instructions_audio() -> str:
     """Return instruction prompts for the audio agent."""
-    
+
     instruction_prompt = """
     You are an Audio Agent specialized in handling all audio processing for video content. 
     Your role is to:
@@ -173,13 +173,14 @@ def return_instructions_audio() -> str:
     Work closely with the Video Assembly Agent to ensure perfect audio-video 
     synchronization in the final output.
     """
-    
+
     return instruction_prompt
 
 
 # -----------------------------------------------------------------------------
 # Asset Sourcing Agent prompt
 # -----------------------------------------------------------------------------
+
 
 def return_instructions_asset_sourcing() -> str:
     """Return instruction prompts for the asset sourcing agent."""

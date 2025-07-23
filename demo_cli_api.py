@@ -24,50 +24,67 @@ import requests
 import subprocess
 import sys
 
+
 def demo_cli_interface():
     """Demonstrate CLI interface functionality."""
     print("=" * 60)
     print("CLI INTERFACE DEMONSTRATION")
     print("=" * 60)
-    
+
     # Show CLI help
     print("\n1. CLI Help:")
-    result = subprocess.run([sys.executable, "video_cli.py", "--help"], 
-                          capture_output=True, text=True)
+    result = subprocess.run(
+        [sys.executable, "video_cli.py", "--help"], capture_output=True, text=True
+    )
     print(result.stdout)
-    
+
     # Show generate command help
     print("\n2. Generate Command Help:")
-    result = subprocess.run([sys.executable, "video_cli.py", "generate", "--help"], 
-                          capture_output=True, text=True)
+    result = subprocess.run(
+        [sys.executable, "video_cli.py", "generate", "--help"],
+        capture_output=True,
+        text=True,
+    )
     print(result.stdout)
-    
+
     # Demonstrate session creation (without waiting)
     print("\n3. Creating a Video Generation Session:")
-    result = subprocess.run([
-        sys.executable, "video_cli.py", "generate",
-        "--prompt", "Create a professional video about artificial intelligence and machine learning",
-        "--duration", "90",
-        "--style", "professional",
-        "--quality", "high"
-    ], capture_output=True, text=True)
-    
+    result = subprocess.run(
+        [
+            sys.executable,
+            "video_cli.py",
+            "generate",
+            "--prompt",
+            "Create a professional video about artificial intelligence and machine learning",
+            "--duration",
+            "90",
+            "--style",
+            "professional",
+            "--quality",
+            "high",
+        ],
+        capture_output=True,
+        text=True,
+    )
+
     print("Command output:")
     print(result.stdout)
     if result.stderr:
         print("Errors:")
         print(result.stderr)
-    
+
     # Show system stats
     print("\n4. System Statistics:")
-    result = subprocess.run([sys.executable, "video_cli.py", "stats"], 
-                          capture_output=True, text=True)
+    result = subprocess.run(
+        [sys.executable, "video_cli.py", "stats"], capture_output=True, text=True
+    )
     print(result.stdout)
-    
+
     # Show recent sessions
     print("\n5. Recent Sessions:")
-    result = subprocess.run([sys.executable, "video_cli.py", "status"], 
-                          capture_output=True, text=True)
+    result = subprocess.run(
+        [sys.executable, "video_cli.py", "status"], capture_output=True, text=True
+    )
     print(result.stdout)
 
 
@@ -76,23 +93,23 @@ def demo_api_interface():
     print("=" * 60)
     print("REST API DEMONSTRATION")
     print("=" * 60)
-    
+
     # Note: This assumes the API server is running on localhost:8000
     base_url = "http://localhost:8000"
-    
+
     try:
         # Test root endpoint
         print("\n1. Root Endpoint:")
         response = requests.get(f"{base_url}/")
         print(f"Status: {response.status_code}")
         print(f"Response: {json.dumps(response.json(), indent=2)}")
-        
+
         # Test health check
         print("\n2. Health Check:")
         response = requests.get(f"{base_url}/health")
         print(f"Status: {response.status_code}")
         print(f"Response: {json.dumps(response.json(), indent=2)}")
-        
+
         # Start video generation
         print("\n3. Start Video Generation:")
         video_request = {
@@ -101,23 +118,23 @@ def demo_api_interface():
             "style": "educational",
             "voice_preference": "neutral",
             "quality": "high",
-            "user_id": "demo-user"
+            "user_id": "demo-user",
         }
-        
+
         response = requests.post(f"{base_url}/videos/generate", json=video_request)
         print(f"Status: {response.status_code}")
-        
+
         if response.status_code == 200:
             session_data = response.json()
             session_id = session_data["session_id"]
             print(f"Response: {json.dumps(session_data, indent=2)}")
-            
+
             # Check session status
             print(f"\n4. Session Status (ID: {session_id[:8]}...):")
             response = requests.get(f"{base_url}/videos/{session_id}/status")
             print(f"Status: {response.status_code}")
             print(f"Response: {json.dumps(response.json(), indent=2)}")
-            
+
             # Get detailed progress
             print("\n5. Detailed Progress:")
             response = requests.get(f"{base_url}/videos/{session_id}/progress")
@@ -128,19 +145,19 @@ def demo_api_interface():
                 print(f"Response: {response.text}")
         else:
             print(f"Error: {response.text}")
-        
+
         # List sessions
         print("\n6. List Sessions:")
         response = requests.get(f"{base_url}/videos?page=1&page_size=5")
         print(f"Status: {response.status_code}")
         print(f"Response: {json.dumps(response.json(), indent=2)}")
-        
+
         # System statistics
         print("\n7. System Statistics:")
         response = requests.get(f"{base_url}/system/stats")
         print(f"Status: {response.status_code}")
         print(f"Response: {json.dumps(response.json(), indent=2)}")
-        
+
     except requests.exceptions.ConnectionError:
         print("ERROR: Could not connect to API server.")
         print("Please start the API server first with: python video_cli.py serve")
@@ -153,9 +170,9 @@ def show_integration_examples():
     print("=" * 60)
     print("INTEGRATION EXAMPLES")
     print("=" * 60)
-    
+
     print("\n1. Python Integration Example:")
-    python_example = '''
+    python_example = """
 import requests
 import time
 
@@ -190,11 +207,11 @@ while True:
         break
     
     time.sleep(5)
-'''
+"""
     print(python_example)
-    
+
     print("\n2. cURL Examples:")
-    curl_examples = '''
+    curl_examples = """
 # Start video generation
 curl -X POST "http://localhost:8000/videos/generate" \\
   -H "Content-Type: application/json" \\
@@ -213,11 +230,11 @@ curl -O "http://localhost:8000/videos/{session_id}/download"
 
 # List sessions
 curl "http://localhost:8000/videos?page=1&page_size=10"
-'''
+"""
     print(curl_examples)
-    
+
     print("\n3. CLI Usage Examples:")
-    cli_examples = '''
+    cli_examples = """
 # Generate a video and wait for completion
 python video_cli.py generate \\
   --prompt "Create an educational video about renewable energy" \\
@@ -237,7 +254,7 @@ python video_cli.py serve --host 0.0.0.0 --port 8000
 
 # Clean up old sessions
 python video_cli.py cleanup --max-age 24
-'''
+"""
     print(cli_examples)
 
 
@@ -245,10 +262,10 @@ def main():
     """Main demo function."""
     print("Multi-Agent Video System - CLI and API Demo")
     print("=" * 60)
-    
+
     if len(sys.argv) > 1:
         demo_type = sys.argv[1].lower()
-        
+
         if demo_type == "cli":
             demo_cli_interface()
         elif demo_type == "api":

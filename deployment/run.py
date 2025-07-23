@@ -20,15 +20,16 @@ from dotenv import load_dotenv
 import json
 import asyncio
 
+
 def pretty_print_event(event):
     """Pretty prints an event with truncation for long content."""
     if "content" not in event:
         print(f"[{event.get('author', 'unknown')}]: {event}")
         return
-        
+
     author = event.get("author", "unknown")
     parts = event["content"].get("parts", [])
-    
+
     for part in parts:
         if "text" in part:
             text = part["text"]
@@ -46,12 +47,15 @@ def pretty_print_event(event):
             print(f"  Args: {args}")
         elif "functionResponse" in part:
             func_response = part["functionResponse"]
-            print(f"[{author}]: Function response: {func_response.get('name', 'unknown')}")
+            print(
+                f"[{author}]: Function response: {func_response.get('name', 'unknown')}"
+            )
             # Truncate response if too long
             response = json.dumps(func_response.get("response", {}))
             if len(response) > 100:
                 response = response[:97] + "..."
             print(f"  Response: {response}")
+
 
 load_dotenv()
 
@@ -62,14 +66,16 @@ vertexai.init(
 
 session_service = VertexAiSessionService(
     project=os.getenv("GOOGLE_CLOUD_PROJECT"),
-    location=os.getenv("GOOGLE_CLOUD_LOCATION")
+    location=os.getenv("GOOGLE_CLOUD_LOCATION"),
 )
 AGENT_ENGINE_ID = os.getenv("AGENT_ENGINE_ID")
 
-session = asyncio.run(session_service.create_session(
-    app_name=AGENT_ENGINE_ID,
-    user_id="123",
-))
+session = asyncio.run(
+    session_service.create_session(
+        app_name=AGENT_ENGINE_ID,
+        user_id="123",
+    )
+)
 
 agent_engine = agent_engines.get(AGENT_ENGINE_ID)
 

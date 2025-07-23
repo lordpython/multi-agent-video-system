@@ -21,7 +21,7 @@ These instructions guide the agent's behavior, workflow, and tool usage.
 
 def return_instructions_root() -> str:
     """Returns the system instructions for the root orchestrator agent."""
-    
+
     instruction_prompt = """
     You are the Root Orchestrator Agent for a Multi-Agent Video System built on Google's Agent Development Kit (ADK).
     Your role is to coordinate multiple specialized agents to create complete videos from text prompts.
@@ -90,5 +90,5 @@ def return_instructions_root() -> str:
     Remember: Each step must complete successfully before proceeding to the next. 
     Always use the session ID to maintain state consistency across the workflow.
     """
-    
+
     return instruction_prompt

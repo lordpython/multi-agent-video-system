@@ -14,13 +14,10 @@ Requirements: 5.1, 5.2, 5.3, 5.4, 5.5
 """
 
 import asyncio
-import json
-import os
 import sys
-import tempfile
 import time
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any
 import traceback
 
 # Add the project root to Python path
@@ -50,8 +47,6 @@ from google.adk.runners import Runner
 from google.genai.types import Content, Part
 
 # Import utilities
-from video_system.utils.error_handling import VideoSystemError
-from video_system.utils.models import VideoGenerationRequest, VideoGenerationStatus
 
 
 class FunctionalityPreservationTest:
@@ -309,20 +304,22 @@ class FunctionalityPreservationTest:
 
             # Verify state evolution (even if agent interaction failed, basic state should work)
             state_evolved = len(final_session.state) >= len(initial_state)
-            
+
             # Test basic state functionality by manually updating state
             test_session = await self.session_service.create_session(
                 app_name=self.app_name,
                 user_id=self.user_id,
                 session_id="state-test-2",
-                state={"test_key": "test_value"}
+                state={"test_key": "test_value"},
             )
-            
+
             retrieved_test_session = await self.session_service.get_session(
                 app_name=self.app_name, user_id=self.user_id, session_id=test_session.id
             )
-            
-            basic_state_works = retrieved_test_session.state.get("test_key") == "test_value"
+
+            basic_state_works = (
+                retrieved_test_session.state.get("test_key") == "test_value"
+            )
 
             print(f"    📊 Initial state preserved: {state_preserved}")
             print(f"    📊 State evolved through interaction: {state_evolved}")
@@ -535,7 +532,7 @@ class FunctionalityPreservationTest:
         report.append("🎯 FUNCTIONALITY PRESERVATION TEST REPORT")
         report.append("=" * 60)
         report.append(f"📅 Test Date: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-        report.append(f"🏗️ Testing: ADK Canonical Structure Migration")
+        report.append("🏗️ Testing: ADK Canonical Structure Migration")
         report.append("")
 
         # Summary

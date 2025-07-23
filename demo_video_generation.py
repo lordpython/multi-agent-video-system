@@ -256,9 +256,7 @@ class VideoGenerationDemo:
         """Call an agent function and return the result."""
         try:
             # Create a simple query that would trigger the function
-            query = (
-                f"Please call {function_name} with parameters: {json.dumps(parameters)}"
-            )
+            (f"Please call {function_name} with parameters: {json.dumps(parameters)}")
 
             # For now, we'll simulate the function call since the agent needs to be run in a proper session
             # In a real implementation, this would use the ADK session management

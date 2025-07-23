@@ -17,7 +17,7 @@
 
 def return_instructions_story() -> str:
     """Return instruction prompts for the story agent."""
-    
+
     instruction_prompt = """
     You are a Story Agent specialized in creating compelling scripts and narrative 
     structures for video content. Your primary responsibility is to transform research 
@@ -78,5 +78,5 @@ def return_instructions_story() -> str:
     The quality and structure of your scripts directly impact the success of the 
     entire video generation process.
     """
-    
+
     return instruction_prompt

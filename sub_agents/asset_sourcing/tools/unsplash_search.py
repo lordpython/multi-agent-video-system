@@ -22,83 +22,97 @@ from pydantic import BaseModel, Field
 
 class UnsplashSearchInput(BaseModel):
     """Input schema for Unsplash search tool."""
+
     query: str = Field(description="The search query for finding images")
     per_page: int = Field(default=15, description="Number of results per page (max 30)")
-    orientation: str = Field(default="all", description="Image orientation: 'all', 'landscape', 'portrait', 'squarish'")
-    color: str = Field(default="any", description="Color filter: 'any', 'black_and_white', 'black', 'white', 'yellow', 'orange', 'red', 'purple', 'magenta', 'green', 'teal', 'blue'")
+    orientation: str = Field(
+        default="all",
+        description="Image orientation: 'all', 'landscape', 'portrait', 'squarish'",
+    )
+    color: str = Field(
+        default="any",
+        description="Color filter: 'any', 'black_and_white', 'black', 'white', 'yellow', 'orange', 'red', 'purple', 'magenta', 'green', 'teal', 'blue'",
+    )
 
 
-def search_unsplash_photos(query: str, per_page: int = 15, orientation: str = "all", color: str = "any") -> Dict[str, Any]:
+def search_unsplash_photos(
+    query: str, per_page: int = 15, orientation: str = "all", color: str = "any"
+) -> Dict[str, Any]:
     """
     Search Unsplash for high-quality stock photos.
-    
+
     Args:
         query: The search query for finding images
         per_page: Number of results per page (max 30)
         orientation: Image orientation filter ('all', 'landscape', 'portrait', 'squarish')
         color: Color filter for images
-        
+
     Returns:
         Dict containing search results with image URLs, metadata, and usage rights
     """
     api_key = os.getenv("UNSPLASH_ACCESS_KEY")
     if not api_key:
         return {
-            "results": [{
-                "id": "error",
-                "urls": {"raw": "", "full": "", "regular": "", "small": "", "thumb": ""},
-                "user": {"name": "Configuration Error", "username": "", "links": {"html": ""}},
-                "alt_description": "UNSPLASH_ACCESS_KEY environment variable is not set",
-                "description": "API key configuration error",
-                "usage_rights": "error",
-                "source": "unsplash"
-            }],
+            "results": [
+                {
+                    "id": "error",
+                    "urls": {
+                        "raw": "",
+                        "full": "",
+                        "regular": "",
+                        "small": "",
+                        "thumb": "",
+                    },
+                    "user": {
+                        "name": "Configuration Error",
+                        "username": "",
+                        "links": {"html": ""},
+                    },
+                    "alt_description": "UNSPLASH_ACCESS_KEY environment variable is not set",
+                    "description": "API key configuration error",
+                    "usage_rights": "error",
+                    "source": "unsplash",
+                }
+            ],
             "total_results": 0,
             "search_query": query,
             "page": 1,
             "per_page": per_page,
-            "source": "unsplash"
+            "source": "unsplash",
         }
-    
+
     base_url = "https://api.unsplash.com/search/photos"
-    
+
     try:
-        headers = {
-            "Authorization": f"Client-ID {api_key}"
-        }
-        
+        headers = {"Authorization": f"Client-ID {api_key}"}
+
         params = {
             "query": query,
             "per_page": min(per_page, 30),  # Unsplash API max is 30
-            "page": 1
+            "page": 1,
         }
-        
+
         # Add orientation filter if specified
         if orientation in ["landscape", "portrait", "squarish"]:
             params["orientation"] = orientation
-        
+
         # Add color filter if specified
         if color != "any":
             params["color"] = color
-        
-        response = requests.get(
-            base_url,
-            headers=headers,
-            params=params,
-            timeout=30
-        )
+
+        response = requests.get(base_url, headers=headers, params=params, timeout=30)
         response.raise_for_status()
-        
+
         data = response.json()
-        
+
         # Extract and format search results
         results = []
         photos = data.get("results", [])
-        
+
         for photo in photos:
             user_info = photo.get("user", {})
             urls = photo.get("urls", {})
-            
+
             formatted_result = {
                 "id": photo.get("id", ""),
                 "urls": {
@@ -106,16 +120,20 @@ def search_unsplash_photos(query: str, per_page: int = 15, orientation: str = "a
                     "full": urls.get("full", ""),
                     "regular": urls.get("regular", ""),
                     "small": urls.get("small", ""),
-                    "thumb": urls.get("thumb", "")
+                    "thumb": urls.get("thumb", ""),
                 },
                 "user": {
                     "name": user_info.get("name", ""),
                     "username": user_info.get("username", ""),
-                    "links": {
-                        "html": user_info.get("links", {}).get("html", "")
-                    }
+                    "links": {"html": user_info.get("links", {}).get("html", "")},
                 },
-                "alt_description": photo.get("alt_description", photo.get("description", f"Photo by {user_info.get('name', 'Unknown')} on Unsplash")),
+                "alt_description": photo.get(
+                    "alt_description",
+                    photo.get(
+                        "description",
+                        f"Photo by {user_info.get('name', 'Unknown')} on Unsplash",
+                    ),
+                ),
                 "description": photo.get("description", ""),
                 "width": photo.get("width", 0),
                 "height": photo.get("height", 0),
@@ -125,20 +143,20 @@ def search_unsplash_photos(query: str, per_page: int = 15, orientation: str = "a
                 "download_url": urls.get("full", ""),
                 "usage_rights": "Free for commercial and personal use. Attribution required: Photo by [photographer] on Unsplash",
                 "source": "unsplash",
-                "media_type": "image"
+                "media_type": "image",
             }
-            
+
             results.append(formatted_result)
-        
+
         return {
             "results": results,
             "total_results": data.get("total", len(results)),
             "search_query": query,
             "page": 1,
             "per_page": per_page,
-            "source": "unsplash"
+            "source": "unsplash",
         }
-        
+
     except requests.exceptions.RequestException as e:
         error_result = {
             "id": "error",
@@ -147,18 +165,18 @@ def search_unsplash_photos(query: str, per_page: int = 15, orientation: str = "a
             "alt_description": f"Failed to search Unsplash: {str(e)}",
             "description": "Search request failed",
             "usage_rights": "error",
-            "source": "unsplash"
+            "source": "unsplash",
         }
-        
+
         return {
             "results": [error_result],
             "total_results": 0,
             "search_query": query,
             "page": 1,
             "per_page": per_page,
-            "source": "unsplash"
+            "source": "unsplash",
         }
-    
+
     except Exception as e:
         error_result = {
             "id": "error",
@@ -167,19 +185,20 @@ def search_unsplash_photos(query: str, per_page: int = 15, orientation: str = "a
             "alt_description": f"An unexpected error occurred: {str(e)}",
             "description": "Unexpected error during search",
             "usage_rights": "error",
-            "source": "unsplash"
+            "source": "unsplash",
         }
-        
+
         return {
             "results": [error_result],
             "total_results": 0,
             "search_query": query,
             "page": 1,
             "per_page": per_page,
-            "source": "unsplash"
+            "source": "unsplash",
         }
 
 
 from google.adk.tools import FunctionTool
+
 # Create the tool function for ADK
 unsplash_search_tool = FunctionTool(search_unsplash_photos)

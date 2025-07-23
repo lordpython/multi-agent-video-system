@@ -16,4 +16,4 @@
 
 from .agent import video_assembly_agent
 
-__all__ = ['video_assembly_agent']
+__all__ = ["video_assembly_agent"]

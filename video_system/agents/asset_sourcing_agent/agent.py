@@ -27,7 +27,9 @@ if src_path not in sys.path:
 
 # Add the project root to the Python path so that ``video_system.shared_libraries``
 # and the legacy ``sub_agents`` package can be imported without issues.
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
+project_root = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
+)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
@@ -39,7 +41,15 @@ if video_system_root not in sys.path:
 # -----------------------------------------------------------------------------
 # Imports – external ADK + shared libs
 # -----------------------------------------------------------------------------
-from google.adk.agents import LlmAgent
+try:
+    from google.adk.agents import Agent
+    ADK_AVAILABLE = True
+except ImportError:
+    ADK_AVAILABLE = False
+    # Define mock class for environments without ADK
+    class Agent:
+        def __init__(self, **kwargs):
+            pass
 
 # Import from canonical utilities
 from video_system.utils.resilience import get_health_monitor
@@ -55,9 +65,10 @@ from video_system.tools.asset_tools import (
     check_pexels_health,
 )
 
+
 def return_instructions_asset_sourcing() -> str:
     """Return instruction prompts for the asset sourcing agent."""
-    
+
     instruction_prompt = """
     You are an Asset Sourcing Agent specialized in finding and managing visual 
     assets for video content. Your role is to:
@@ -78,8 +89,9 @@ def return_instructions_asset_sourcing() -> str:
     Your output should provide the Story and Video Assembly agents with 
     all necessary visual assets for professional video production.
     """
-    
+
     return instruction_prompt
+
 
 # -----------------------------------------------------------------------------
 # Logging & health-monitoring setup
@@ -135,13 +147,18 @@ logger.info("Asset sourcing agent initialized with health monitoring")
 # -----------------------------------------------------------------------------
 # Root ADK agent
 # -----------------------------------------------------------------------------
-root_agent = LlmAgent(
-    model="gemini-2.5-pro",
-    name="asset_sourcing_agent",
-    description=(
-        "Finds and manages visual assets for video content using various "
-        "stock media APIs."
-    ),
-    instruction=return_instructions_asset_sourcing(),
-    tools=[pexels_search_tool, unsplash_search_tool, pixabay_search_tool],
-)
+if ADK_AVAILABLE:
+    root_agent = Agent(
+        model="gemini-2.5-pro",
+        name="asset_sourcing_agent",
+        description=(
+            "Finds and manages visual assets for video content using various "
+            "stock media APIs."
+        ),
+        instruction=return_instructions_asset_sourcing(),
+        tools=[pexels_search_tool, unsplash_search_tool, pixabay_search_tool],
+    )
+else:
+    # Fallback for environments without ADK
+    root_agent = None
+    logger.warning("ADK not available - asset sourcing agent disabled")

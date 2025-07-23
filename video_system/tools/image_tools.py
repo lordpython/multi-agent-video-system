@@ -14,7 +14,7 @@ from sub_agents.image_generation.tools import (
     imagen_generation_tool,
     stable_diffusion_tool,
     prompt_optimizer_tool,
-    style_variations_tool
+    style_variations_tool,
 )
 
 __all__ = [

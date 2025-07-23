@@ -18,8 +18,4 @@ from .pexels_search import pexels_search_tool
 from .unsplash_search import unsplash_search_tool
 from .pixabay_search import pixabay_search_tool
 
-__all__ = [
-    'pexels_search_tool',
-    'unsplash_search_tool',
-    'pixabay_search_tool'
-]
+__all__ = ["pexels_search_tool", "unsplash_search_tool", "pixabay_search_tool"]

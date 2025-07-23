@@ -19,9 +19,9 @@ from .visual_description import visual_description_tool, visual_enhancement_tool
 
 __all__ = [
     "script_generation_tool",
-    "scene_breakdown_tool", 
+    "scene_breakdown_tool",
     "visual_description_tool",
-    "visual_enhancement_tool"
+    "visual_enhancement_tool",
 ]
 
 """Tools package for the story agent."""

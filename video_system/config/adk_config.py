@@ -162,9 +162,7 @@ class ADKServiceManager:
 
                 # Try to create a session service to validate credentials
                 try:
-                    session_service = SessionServiceFactory.create_session_service(
-                        self.config
-                    )
+                    SessionServiceFactory.create_session_service(self.config)
                     logger.info("ADK configuration validation successful")
                     return True
                 except Exception as e:

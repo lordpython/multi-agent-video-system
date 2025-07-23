@@ -17,8 +17,4 @@
 from .gemini_tts import gemini_tts_tool
 from .audio_processing import audio_timing_tool, audio_format_tool
 
-__all__ = [
-    'gemini_tts_tool',
-    'audio_timing_tool',
-    'audio_format_tool'
-]
+__all__ = ["gemini_tts_tool", "audio_timing_tool", "audio_format_tool"]

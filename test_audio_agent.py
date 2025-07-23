@@ -17,7 +17,7 @@ async def test_audio_agent_discovery():
         print("Testing audio agent discovery...")
 
         # Test importing the agent
-        from src.video_system.agents.audio_agent.agent import root_agent
+        from video_system.agents.audio_agent.agent import root_agent
 
         print(f"✓ Successfully imported audio agent: {root_agent.name}")
 
@@ -50,7 +50,7 @@ async def test_audio_agent_basic_functionality():
     try:
         print("\nTesting audio agent basic functionality...")
 
-        from src.video_system.agents.audio_agent.agent import root_agent
+        from video_system.agents.audio_agent.agent import root_agent
 
         # Test that the agent has the expected instruction
         if hasattr(root_agent, "instruction") and root_agent.instruction:

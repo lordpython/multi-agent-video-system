@@ -20,8 +20,8 @@ from .transition_effects import transition_effects_tool
 from .video_encoding import video_encoding_tool
 
 __all__ = [
-    'ffmpeg_composition_tool',
-    'video_synchronization_tool', 
-    'transition_effects_tool',
-    'video_encoding_tool'
+    "ffmpeg_composition_tool",
+    "video_synchronization_tool",
+    "transition_effects_tool",
+    "video_encoding_tool",
 ]

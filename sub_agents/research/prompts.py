@@ -17,7 +17,7 @@
 
 def return_instructions_research() -> str:
     """Return instruction prompts for the research agent."""
-    
+
     instruction_prompt = """
     You are a Research Agent specialized in gathering relevant information and context 
     for video content creation. Your role is to:
@@ -45,5 +45,5 @@ def return_instructions_research() -> str:
     Your research output should be comprehensive yet concise, providing the Story Agent
     with all necessary information to create compelling video content, even when search tools are unavailable.
     """
-    
+
     return instruction_prompt

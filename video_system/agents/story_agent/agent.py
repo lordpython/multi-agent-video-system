@@ -16,27 +16,37 @@
 
 import sys
 import os
+
 # Add the src directory to the Python path for video_system modules
-src_path = os.path.join(os.path.dirname(__file__), '..', '..', '..')
+src_path = os.path.join(os.path.dirname(__file__), "..", "..", "..")
 sys.path.insert(0, src_path)
 # Add the project root to the Python path for video_system.shared_libraries
-project_root = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')
+project_root = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
 sys.path.insert(0, project_root)
 
-from google.adk.agents import LlmAgent
+try:
+    from google.adk.agents import Agent
+    ADK_AVAILABLE = True
+except ImportError:
+    ADK_AVAILABLE = False
+    # Define mock class for environments without ADK
+    class Agent:
+        def __init__(self, **kwargs):
+            pass
 from video_system.tools.story_tools import (
     script_generation_tool,
     scene_breakdown_tool,
     visual_description_tool,
-    visual_enhancement_tool
+    visual_enhancement_tool,
 )
 
 from video_system.utils.resilience import get_health_monitor
 from video_system.utils.logging_config import get_logger
 
+
 def return_instructions_story() -> str:
     """Return instruction prompts for the story agent."""
-    
+
     instruction_prompt = """
     You are a Story Agent specialized in creating compelling scripts and narrative 
     structures for video content. Your role is to:
@@ -56,8 +66,9 @@ def return_instructions_story() -> str:
     
     Your output should be well-structured and ready for the next stage of video production.
     """
-    
+
     return instruction_prompt
+
 
 # Configure logger for story agent
 logger = get_logger("story_agent")
@@ -65,32 +76,39 @@ logger = get_logger("story_agent")
 # Register health checks for story services
 health_monitor = get_health_monitor()
 
+
 def story_health_check() -> dict:
     """Health check for story generation services."""
     return {
         "status": "healthy",
-        "details": {"message": "Story generation services are operational"}
+        "details": {"message": "Story generation services are operational"},
     }
+
 
 health_monitor.service_registry.register_service(
     service_name="story_generation",
     health_check_func=story_health_check,
     health_check_interval=300,  # Check every 5 minutes
-    critical=True
+    critical=True,
 )
 
 logger.info("Story agent initialized with health monitoring")
 
 # Story Agent with script generation and visual description tools
-root_agent = LlmAgent(
-    model='gemini-2.5-pro',
-    name='story_agent',
-    description='Creates scripts and narrative structure for video content.',
-    instruction=return_instructions_story(),
-    tools=[
-        script_generation_tool,
-        scene_breakdown_tool,
-        visual_description_tool,
-        visual_enhancement_tool
-    ]
-)
+if ADK_AVAILABLE:
+    root_agent = Agent(
+        model="gemini-2.5-pro",
+        name="story_agent",
+        description="Creates scripts and narrative structure for video content.",
+        instruction=return_instructions_story(),
+        tools=[
+            script_generation_tool,
+            scene_breakdown_tool,
+            visual_description_tool,
+            visual_enhancement_tool,
+        ],
+    )
+else:
+    # Fallback for environments without ADK
+    root_agent = None
+    logger.warning("ADK not available - story agent disabled")

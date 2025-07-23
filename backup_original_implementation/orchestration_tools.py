@@ -46,15 +46,15 @@ logger = logging.getLogger(__name__)
 
 def validate_asset_collection(assets: AssetCollection) -> List[str]:
     """Validate AssetCollection structure and return list of issues.
-    
+
     Args:
         assets: AssetCollection to validate
-        
+
     Returns:
         List of validation issues (empty if valid)
     """
     issues = []
-    
+
     try:
         # Validate that images are proper AssetItem objects
         for i, asset in enumerate(assets.images):
@@ -63,10 +63,19 @@ def validate_asset_collection(assets: AssetCollection) -> List[str]:
                 if isinstance(asset, dict):
                     try:
                         # Validate required fields
-                        required_fields = ['asset_id', 'asset_type', 'source_url', 'usage_rights']
-                        missing_fields = [field for field in required_fields if field not in asset]
+                        required_fields = [
+                            "asset_id",
+                            "asset_type",
+                            "source_url",
+                            "usage_rights",
+                        ]
+                        missing_fields = [
+                            field for field in required_fields if field not in asset
+                        ]
                         if missing_fields:
-                            issues.append(f"Image asset {i}: Missing required fields: {missing_fields}")
+                            issues.append(
+                                f"Image asset {i}: Missing required fields: {missing_fields}"
+                            )
                         else:
                             # Convert to AssetItem to validate structure
                             AssetItem(**asset)
@@ -74,38 +83,47 @@ def validate_asset_collection(assets: AssetCollection) -> List[str]:
                         issues.append(f"Image asset {i}: Invalid structure - {str(e)}")
                 else:
                     issues.append(f"Image asset {i}: Not an AssetItem object or dict")
-        
+
         # Validate that videos are proper AssetItem objects
         for i, asset in enumerate(assets.videos):
             if not isinstance(asset, AssetItem):
                 if isinstance(asset, dict):
                     try:
-                        required_fields = ['asset_id', 'asset_type', 'source_url', 'usage_rights']
-                        missing_fields = [field for field in required_fields if field not in asset]
+                        required_fields = [
+                            "asset_id",
+                            "asset_type",
+                            "source_url",
+                            "usage_rights",
+                        ]
+                        missing_fields = [
+                            field for field in required_fields if field not in asset
+                        ]
                         if missing_fields:
-                            issues.append(f"Video asset {i}: Missing required fields: {missing_fields}")
+                            issues.append(
+                                f"Video asset {i}: Missing required fields: {missing_fields}"
+                            )
                         else:
                             AssetItem(**asset)
                     except Exception as e:
                         issues.append(f"Video asset {i}: Invalid structure - {str(e)}")
                 else:
                     issues.append(f"Video asset {i}: Not an AssetItem object or dict")
-                    
+
     except Exception as e:
         issues.append(f"AssetCollection validation error: {str(e)}")
-    
+
     return issues
 
 
 def ensure_asset_consistency(assets: AssetCollection) -> AssetCollection:
     """Ensure all assets in the collection are proper AssetItem objects.
-    
+
     Args:
         assets: AssetCollection to normalize
-        
+
     Returns:
         AssetCollection with all assets as proper AssetItem objects
-        
+
     Raises:
         ValueError: If assets cannot be converted to proper structure
     """
@@ -120,7 +138,7 @@ def ensure_asset_consistency(assets: AssetCollection) -> AssetCollection:
                 normalized_images.append(AssetItem(**asset))
             else:
                 raise ValueError(f"Invalid asset type: {type(asset)}")
-        
+
         # Convert video assets to proper AssetItem objects if needed
         normalized_videos = []
         for asset in assets.videos:
@@ -131,14 +149,12 @@ def ensure_asset_consistency(assets: AssetCollection) -> AssetCollection:
                 normalized_videos.append(AssetItem(**asset))
             else:
                 raise ValueError(f"Invalid asset type: {type(asset)}")
-        
+
         # Return normalized collection
         return AssetCollection(
-            images=normalized_images,
-            videos=normalized_videos,
-            metadata=assets.metadata
+            images=normalized_images, videos=normalized_videos, metadata=assets.metadata
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to ensure asset consistency: {e}")
         raise ValueError(f"Asset consistency validation failed: {str(e)}")
@@ -146,16 +162,16 @@ def ensure_asset_consistency(assets: AssetCollection) -> AssetCollection:
 
 def create_asset_collection_from_dict(data: Dict[str, Any]) -> AssetCollection:
     """Create AssetCollection from dictionary data with proper type validation.
-    
+
     This function ensures that all assets within the collection are proper AssetItem objects,
     not dictionaries, addressing serialization/deserialization consistency issues.
-    
+
     Args:
         data: Dictionary containing asset collection data
-        
+
     Returns:
         AssetCollection with properly typed AssetItem objects
-        
+
     Raises:
         ValueError: If data cannot be converted to proper AssetCollection structure
     """
@@ -168,14 +184,23 @@ def create_asset_collection_from_dict(data: Dict[str, Any]) -> AssetCollection:
                     images.append(img_data)
                 elif isinstance(img_data, dict):
                     # Ensure all required fields are present
-                    required_fields = ['asset_id', 'asset_type', 'source_url', 'usage_rights']
-                    missing_fields = [field for field in required_fields if field not in img_data]
+                    required_fields = [
+                        "asset_id",
+                        "asset_type",
+                        "source_url",
+                        "usage_rights",
+                    ]
+                    missing_fields = [
+                        field for field in required_fields if field not in img_data
+                    ]
                     if missing_fields:
-                        raise ValueError(f"Missing required fields in image asset: {missing_fields}")
+                        raise ValueError(
+                            f"Missing required fields in image asset: {missing_fields}"
+                        )
                     images.append(AssetItem(**img_data))
                 else:
                     raise ValueError(f"Invalid image asset type: {type(img_data)}")
-        
+
         # Extract and validate videos
         videos = []
         if "videos" in data:
@@ -184,21 +209,28 @@ def create_asset_collection_from_dict(data: Dict[str, Any]) -> AssetCollection:
                     videos.append(vid_data)
                 elif isinstance(vid_data, dict):
                     # Ensure all required fields are present
-                    required_fields = ['asset_id', 'asset_type', 'source_url', 'usage_rights']
-                    missing_fields = [field for field in required_fields if field not in vid_data]
+                    required_fields = [
+                        "asset_id",
+                        "asset_type",
+                        "source_url",
+                        "usage_rights",
+                    ]
+                    missing_fields = [
+                        field for field in required_fields if field not in vid_data
+                    ]
                     if missing_fields:
-                        raise ValueError(f"Missing required fields in video asset: {missing_fields}")
+                        raise ValueError(
+                            f"Missing required fields in video asset: {missing_fields}"
+                        )
                     videos.append(AssetItem(**vid_data))
                 else:
                     raise ValueError(f"Invalid video asset type: {type(vid_data)}")
-        
+
         # Create and return the collection
         return AssetCollection(
-            images=images,
-            videos=videos,
-            metadata=data.get("metadata", {})
+            images=images, videos=videos, metadata=data.get("metadata", {})
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to create AssetCollection from dict: {e}")
         raise ValueError(f"AssetCollection creation failed: {str(e)}")
@@ -225,14 +257,16 @@ async def update_session_state(session_id: str, **updates) -> bool:
         if not session_id:
             logger.error("Cannot update session state: session_id is None or empty")
             return False
-        
+
         session_manager = await get_session_manager()
-        
+
         # Ensure session exists before attempting update
         if not await session_manager.ensure_session_exists(session_id):
-            logger.error(f"Cannot update session state: session {session_id} does not exist")
+            logger.error(
+                f"Cannot update session state: session {session_id} does not exist"
+            )
             return False
-        
+
         return await session_manager.update_session_state(session_id, **updates)
     except Exception as e:
         logger.error(f"Failed to update session state {session_id}: {e}")
@@ -319,7 +353,7 @@ async def coordinate_research(topic: str, session_id: str) -> Dict[str, Any]:
 
         # Create research request with validation
         try:
-            research_request = ResearchRequest(
+            ResearchRequest(
                 topic=topic, scope="comprehensive", depth_requirements="detailed"
             )
         except Exception as e:
@@ -466,7 +500,7 @@ async def coordinate_story(
         research_obj = ResearchData(**research_data)
 
         # Create script request
-        script_request = ScriptRequest(
+        ScriptRequest(
             research_data=research_obj,
             style_preferences={"tone": "engaging", "pace": "moderate"},
             duration=duration,
@@ -578,7 +612,7 @@ async def coordinate_assets(script: Dict[str, Any], session_id: str) -> Dict[str
             visual_requirements.extend(scene.visual_requirements)
 
         # Create asset request
-        asset_request = AssetRequest(
+        AssetRequest(
             scene_descriptions=scene_descriptions,
             style_requirements={"quality": "high", "style": "professional"},
             specifications={"format": "jpg", "resolution": "1920x1080"},
@@ -755,7 +789,7 @@ async def coordinate_audio(script: Dict[str, Any], session_id: str) -> Dict[str,
         full_script_text = " ".join([scene.dialogue for scene in script_obj.scenes])
 
         # Create audio request
-        audio_request = AudioRequest(
+        AudioRequest(
             script_text=full_script_text,
             voice_preferences={
                 "voice": "neutral",
@@ -880,7 +914,7 @@ async def coordinate_assembly(
         audio_obj = AudioAssets(**audio_assets)
 
         # Create assembly request
-        assembly_request = AssemblyRequest(
+        AssemblyRequest(
             assets=assets_obj,
             audio=audio_obj,
             script=script_obj,

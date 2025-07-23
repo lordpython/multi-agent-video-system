@@ -11,22 +11,23 @@ sys.path.insert(0, str(project_root))
 
 from test_functionality_preservation import FunctionalityPreservationTest
 
+
 async def main():
     """Run final validation with summary only."""
     print("🎯 Final Functionality Preservation Validation")
     print("=" * 60)
-    
+
     test_suite = FunctionalityPreservationTest()
-    
+
     # Run all tests
     results = await test_suite.run_all_tests()
-    
+
     # Generate summary
     total_tests = len(results)
     passed_tests = sum(1 for result in results.values() if result["status"] == "PASSED")
     failed_tests = sum(1 for result in results.values() if result["status"] == "FAILED")
     error_tests = sum(1 for result in results.values() if result["status"] == "ERROR")
-    
+
     print("\n" + "=" * 60)
     print("📊 FINAL SUMMARY")
     print("-" * 30)
@@ -34,15 +35,15 @@ async def main():
     print(f"✅ Passed: {passed_tests}")
     print(f"❌ Failed: {failed_tests}")
     print(f"🚨 Errors: {error_tests}")
-    print(f"Success Rate: {(passed_tests/total_tests)*100:.1f}%")
-    
+    print(f"Success Rate: {(passed_tests / total_tests) * 100:.1f}%")
+
     # Show test results
     print("\n📋 TEST RESULTS")
     print("-" * 30)
     for test_name, result in results.items():
         status_emoji = {"PASSED": "✅", "FAILED": "❌", "ERROR": "🚨"}[result["status"]]
         print(f"{status_emoji} {test_name}: {result['status']}")
-    
+
     print("\n🎯 CONCLUSION")
     print("-" * 20)
     if passed_tests == total_tests:
@@ -58,6 +59,7 @@ async def main():
         print("❌ SIGNIFICANT ISSUES DETECTED")
         print("🚨 Major fixes required")
         return False
+
 
 if __name__ == "__main__":
     result = asyncio.run(main())

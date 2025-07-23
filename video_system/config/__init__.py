@@ -25,7 +25,7 @@ from .adk_config import (
     get_adk_service_manager,
     initialize_adk_services,
     get_session_service,
-    validate_adk_configuration
+    validate_adk_configuration,
 )
 
 __all__ = [

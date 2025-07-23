@@ -20,17 +20,15 @@ from .tools import (
     script_generation_tool,
     scene_breakdown_tool,
     visual_description_tool,
-    visual_enhancement_tool
+    visual_enhancement_tool,
 )
 
 from typing import Dict, Any
-from video_system.shared_libraries import (
-    get_health_monitor,
-    get_logger
-)
+from video_system.shared_libraries import get_health_monitor, get_logger
 
 # Configure logger for story agent
 logger = get_logger("story_agent")
+
 
 # Health check function for story generation services
 def check_story_generation_health() -> Dict[str, Any]:
@@ -41,26 +39,26 @@ def check_story_generation_health() -> Dict[str, Any]:
             "facts": ["Test fact for health check"],
             "key_points": ["Test key point for health check"],
             "sources": [],
-            "context": {"topic": "health check"}
+            "context": {"topic": "health check"},
         }
-        
-        result = script_generation_tool(test_data, target_duration=30, style="professional")
-        
+
+        result = script_generation_tool(
+            test_data, target_duration=30, style="professional"
+        )
+
         if result.get("success", False):
             return {
                 "status": "healthy",
-                "details": {"message": "Story generation is working normally"}
+                "details": {"message": "Story generation is working normally"},
             }
         else:
             return {
                 "status": "degraded",
-                "details": {"error": "Story generation returned error response"}
+                "details": {"error": "Story generation returned error response"},
             }
     except Exception as e:
-        return {
-            "status": "unhealthy",
-            "details": {"error": str(e)}
-        }
+        return {"status": "unhealthy", "details": {"error": str(e)}}
+
 
 # Register health checks for story services
 health_monitor = get_health_monitor()
@@ -68,21 +66,21 @@ health_monitor.service_registry.register_service(
     service_name="story_generation",
     health_check_func=check_story_generation_health,
     health_check_interval=300,  # Check every 5 minutes
-    critical=True
+    critical=True,
 )
 
 logger.info("Story agent initialized with health monitoring")
 
 # Story Agent with script generation and visual description tools
 story_agent = LlmAgent(
-    model='gemini-2.5-pro',
-    name='story_agent',
-    description='Creates scripts and narrative structure for video content.',
+    model="gemini-2.5-pro",
+    name="story_agent",
+    description="Creates scripts and narrative structure for video content.",
     instruction=return_instructions_story(),
     tools=[
         script_generation_tool,
         scene_breakdown_tool,
         visual_description_tool,
-        visual_enhancement_tool
-    ]
+        visual_enhancement_tool,
+    ],
 )

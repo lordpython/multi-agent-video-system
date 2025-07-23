@@ -20,11 +20,19 @@ from typing import Dict, Any
 
 # Add src directory to path for imports
 current_dir = os.path.dirname(__file__)
-src_dir = os.path.abspath(os.path.join(current_dir, '..', '..', '..'))
+src_dir = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
 if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
-from google.adk.agents import LlmAgent
+try:
+    from google.adk.agents import Agent
+    ADK_AVAILABLE = True
+except ImportError:
+    ADK_AVAILABLE = False
+    # Define mock class for environments without ADK
+    class Agent:
+        def __init__(self, **kwargs):
+            pass
 
 # Import utilities from canonical paths
 from video_system.utils.error_handling import get_logger
@@ -35,12 +43,13 @@ from video_system.tools.audio_tools import (
     gemini_tts_tool,
     audio_timing_tool,
     audio_format_tool,
-    check_gemini_tts_health
+    check_gemini_tts_health,
 )
+
 
 def return_instructions_audio() -> str:
     """Return instruction prompts for the audio agent."""
-    
+
     instruction_prompt = """
     You are an Audio Agent specialized in handling all audio processing for video content. 
     Your role is to:
@@ -68,11 +77,13 @@ def return_instructions_audio() -> str:
     Work closely with the Video Assembly Agent to ensure perfect audio-video 
     synchronization in the final output.
     """
-    
+
     return instruction_prompt
+
 
 # Configure logger for audio agent
 logger = get_logger("audio_agent")
+
 
 # Health check function for audio services
 def check_audio_services_health() -> Dict[str, Any]:
@@ -80,27 +91,25 @@ def check_audio_services_health() -> Dict[str, Any]:
     try:
         # Check Gemini TTS service
         tts_status = check_gemini_tts_health()
-        
+
         if tts_status.get("status") == "healthy":
             return {
                 "status": "healthy",
-                "details": {"message": "Audio services are operational"}
+                "details": {"message": "Audio services are operational"},
             }
         elif tts_status.get("status") == "degraded":
             return {
                 "status": "degraded",
-                "details": {"message": "Some audio services are experiencing issues"}
+                "details": {"message": "Some audio services are experiencing issues"},
             }
         else:
             return {
                 "status": "unhealthy",
-                "details": {"error": "Audio services are unavailable"}
+                "details": {"error": "Audio services are unavailable"},
             }
     except Exception as e:
-        return {
-            "status": "unhealthy",
-            "details": {"error": str(e)}
-        }
+        return {"status": "unhealthy", "details": {"error": str(e)}}
+
 
 # Register health checks for audio services
 health_monitor = get_health_monitor()
@@ -108,27 +117,28 @@ health_monitor.service_registry.register_service(
     service_name="gemini_tts",
     health_check_func=check_gemini_tts_health,
     health_check_interval=300,  # Check every 5 minutes
-    critical=True
+    critical=True,
 )
 
 health_monitor.service_registry.register_service(
     service_name="audio_services",
     health_check_func=check_audio_services_health,
     health_check_interval=180,  # Check every 3 minutes
-    critical=True
+    critical=True,
 )
 
 logger.info("Audio agent initialized with health monitoring")
 
 # Audio Agent with TTS and audio processing tools and error handling
-root_agent = LlmAgent(
-    model='gemini-2.5-pro',
-    name='audio_agent',
-    description='Handles text-to-speech and audio processing for video narration.',
-    instruction=return_instructions_audio(),
-    tools=[
-        gemini_tts_tool,
-        audio_timing_tool,
-        audio_format_tool
-    ]
-)
+if ADK_AVAILABLE:
+    root_agent = Agent(
+        model="gemini-2.5-pro",
+        name="audio_agent",
+        description="Handles text-to-speech and audio processing for video narration.",
+        instruction=return_instructions_audio(),
+        tools=[gemini_tts_tool, audio_timing_tool, audio_format_tool],
+    )
+else:
+    # Fallback for environments without ADK
+    root_agent = None
+    logger.warning("ADK not available - audio agent disabled")

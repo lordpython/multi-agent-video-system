@@ -17,7 +17,7 @@
 
 def return_instructions_image_generation() -> str:
     """Return instruction prompts for the image generation agent."""
-    
+
     instruction_prompt = """
     You are an Image Generation Agent specialized in creating custom visual assets 
     using AI image generation services. Your role is to:
@@ -38,5 +38,5 @@ def return_instructions_image_generation() -> str:
     Work closely with the Asset Sourcing Agent to ensure a cohesive visual 
     experience throughout the entire video production.
     """
-    
+
     return instruction_prompt

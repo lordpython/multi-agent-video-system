@@ -17,11 +17,19 @@
 import sys
 import os
 from typing import Dict, Any
-from google.adk.agents import LlmAgent
+try:
+    from google.adk.agents import Agent
+    ADK_AVAILABLE = True
+except ImportError:
+    ADK_AVAILABLE = False
+    # Define mock class for environments without ADK
+    class Agent:
+        def __init__(self, **kwargs):
+            pass
 
 # Add src directory to path for imports
 current_dir = os.path.dirname(__file__)
-src_dir = os.path.abspath(os.path.join(current_dir, '..', '..', '..'))
+src_dir = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
 if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
@@ -31,7 +39,7 @@ from video_system.tools.video_tools import (
     video_synchronization_tool,
     transition_effects_tool,
     video_encoding_tool,
-    check_ffmpeg_health
+    check_ffmpeg_health,
 )
 
 # Import utilities from canonical paths
@@ -41,33 +49,34 @@ from video_system.utils.resilience import get_health_monitor
 # Configure logger for video assembly agent
 logger = get_logger("video_assembly_agent")
 
+
 # Health check function for video assembly services
 def check_video_assembly_health() -> Dict[str, Any]:
     """Perform a comprehensive health check on video assembly services."""
     try:
         # Check FFmpeg availability
         ffmpeg_status = check_ffmpeg_health()
-        
+
         if ffmpeg_status.get("status") == "healthy":
             return {
                 "status": "healthy",
-                "details": {"message": "Video assembly services are operational"}
+                "details": {"message": "Video assembly services are operational"},
             }
         elif ffmpeg_status.get("status") == "degraded":
             return {
                 "status": "degraded",
-                "details": {"message": "Some video assembly services are experiencing issues"}
+                "details": {
+                    "message": "Some video assembly services are experiencing issues"
+                },
             }
         else:
             return {
                 "status": "unhealthy",
-                "details": {"error": "Video assembly services are unavailable"}
+                "details": {"error": "Video assembly services are unavailable"},
             }
     except Exception as e:
-        return {
-            "status": "unhealthy",
-            "details": {"error": str(e)}
-        }
+        return {"status": "unhealthy", "details": {"error": str(e)}}
+
 
 # Register health checks for video assembly services
 health_monitor = get_health_monitor()
@@ -75,22 +84,23 @@ health_monitor.service_registry.register_service(
     service_name="ffmpeg",
     health_check_func=check_ffmpeg_health,
     health_check_interval=300,  # Check every 5 minutes
-    critical=True
+    critical=True,
 )
 
 health_monitor.service_registry.register_service(
     service_name="video_assembly",
     health_check_func=check_video_assembly_health,
     health_check_interval=180,  # Check every 3 minutes
-    critical=True
+    critical=True,
 )
 
 logger.info("Video assembly agent initialized with health monitoring")
 
+
 # Define instruction for the video assembly agent
 def return_instructions_video_assembly() -> str:
     """Return instruction prompts for the video assembly agent."""
-    
+
     instruction_prompt = """
     You are a Video Assembly Agent specialized in combining all video elements 
     into the final video product using FFmpeg. Your role is to:
@@ -111,19 +121,25 @@ def return_instructions_video_assembly() -> str:
     Your final output should be a polished, professional video file ready 
     for distribution, with all elements perfectly synchronized and optimized.
     """
-    
+
     return instruction_prompt
 
+
 # Video Assembly Agent with FFmpeg tools for video composition and encoding with error handling
-root_agent = LlmAgent(
-    model='gemini-2.5-pro',
-    name='video_assembly_agent',
-    description='Combines all visual and audio assets into a final video product.',
-    instruction=return_instructions_video_assembly(),
-    tools=[
-        video_synchronization_tool,
-        ffmpeg_composition_tool,
-        transition_effects_tool,
-        video_encoding_tool
-    ]
-)
+if ADK_AVAILABLE:
+    root_agent = Agent(
+        model="gemini-2.5-pro",
+        name="video_assembly_agent",
+        description="Combines all visual and audio assets into a final video product.",
+        instruction=return_instructions_video_assembly(),
+        tools=[
+            video_synchronization_tool,
+            ffmpeg_composition_tool,
+            transition_effects_tool,
+            video_encoding_tool,
+        ],
+    )
+else:
+    # Fallback for environments without ADK
+    root_agent = None
+    logger.warning("ADK not available - video assembly agent disabled")

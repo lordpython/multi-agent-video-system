@@ -36,24 +36,24 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 # Import video system modules
-from video_system.shared_libraries.adk_session_manager import (
+from video_system.utils.adk_session_manager import (
     VideoSystemSessionManager,
     get_session_manager,
 )
-from video_system.shared_libraries.adk_session_models import (
+from video_system.utils.adk_session_models import (
     VideoGenerationStage,
     SessionMetadata,
 )
-from video_system.shared_libraries.models import (
+from video_system.utils.models import (
     VideoGenerationRequest,
     ResearchData,
 )
-from video_system.shared_libraries.session_error_handling import (
+from video_system.utils.session_error_handling import (
     SessionError,
 )
-from video_system.shared_libraries.session_migration import SessionMigrationManager
-from video_system import orchestration_tools
-from video_system import agent
+from video_system.utils.session_migration import SessionMigrationManager
+from video_system.tools import orchestration_tools
+from video_system.agents.video_orchestrator import agent
 from google.adk.sessions import InMemorySessionService, BaseSessionService
 
 # Configure logging
@@ -650,7 +650,7 @@ async def test_migration_integration():
     try:
         # Create a migration manager
         migration_manager = SessionMigrationManager()
-        
+
         # Test 1: Check migration status
         migration_status = await migration_manager.get_migration_status()
         assert "migration_completed" in migration_status
@@ -658,17 +658,18 @@ async def test_migration_integration():
 
         # Test 2: Create session manager with migration
         session_manager = VideoSystemSessionManager(
-            session_service=InMemorySessionService(),
-            run_migration_check=True
+            session_service=InMemorySessionService(), run_migration_check=True
         )
 
         # Verify migration was checked
-        assert hasattr(session_manager, 'migration_completed')
+        assert hasattr(session_manager, "migration_completed")
         logger.info("✓ Migration check completed during initialization")
 
         # Test 3: Create session after migration
         request = VideoGenerationRequest(prompt="Post-migration test")
-        session_id = await session_manager.create_session(request, user_id="migration_user")
+        session_id = await session_manager.create_session(
+            request, user_id="migration_user"
+        )
         assert session_id is not None
         logger.info(f"✓ Session created after migration: {session_id}")
 
@@ -690,10 +691,9 @@ async def test_agent_function_integration():
     try:
         # Test 1: Agent session creation
         result = await agent.start_video_generation(
-            prompt="Agent integration test video",
-            user_id="agent_test_user"
+            prompt="Agent integration test video", user_id="agent_test_user"
         )
-        
+
         assert result.get("success") is True, "Agent should create session successfully"
         session_id = result.get("session_id")
         assert session_id is not None, "Agent should return session ID"
@@ -728,16 +728,16 @@ async def test_orchestration_integration():
     try:
         # Test 1: Create session through orchestration
         request = VideoGenerationRequest(prompt="Orchestration test video")
-        session_id = await orchestration_tools.create_session_state(request, user_id="orch_user")
+        session_id = await orchestration_tools.create_session_state(
+            request, user_id="orch_user"
+        )
         assert session_id is not None, "Orchestration should create session"
         logger.info(f"✓ Orchestration created session: {session_id}")
 
         # Test 2: Update session through orchestration
         session_manager = await get_session_manager()
         success = await session_manager.update_stage_and_progress(
-            session_id, 
-            VideoGenerationStage.RESEARCHING, 
-            0.25
+            session_id, VideoGenerationStage.RESEARCHING, 0.25
         )
         assert success, "Orchestration should update session progress"
         logger.info("✓ Orchestration updated session progress")
@@ -776,24 +776,28 @@ async def test_end_to_end_workflow():
             duration_preference=30,
             style="professional",
             voice_preference="natural",
-            user_id="e2e_user"
+            user_id="e2e_user",
         )
-        
-        assert result.get("success") is True, "Video generation should start successfully"
+
+        assert result.get("success") is True, (
+            "Video generation should start successfully"
+        )
         session_id = result.get("session_id")
         logger.info(f"✓ Started video generation: {session_id}")
 
         # Test 2: Execute workflow
         workflow_result = await agent.execute_complete_workflow(session_id)
-        assert workflow_result.get("success") is True, "Workflow should execute successfully"
+        assert workflow_result.get("success") is True, (
+            "Workflow should execute successfully"
+        )
         logger.info("✓ Workflow execution initiated")
 
         # Test 3: Monitor progress through session manager
         session_manager = await get_session_manager()
-        
+
         # Wait a moment for initial processing
         await asyncio.sleep(0.5)
-        
+
         session_status = await session_manager.get_session_status(session_id)
         assert session_status is not None, "Should be able to get session status"
         logger.info(f"✓ Session status: {session_status.status}")
@@ -806,7 +810,9 @@ async def test_end_to_end_workflow():
         # Test 5: Verify state updates
         state = await session_manager.get_session_state(session_id)
         assert state is not None, "Session should have state"
-        assert state.current_stage != VideoGenerationStage.INITIALIZING, "Stage should have progressed"
+        assert state.current_stage != VideoGenerationStage.INITIALIZING, (
+            "Stage should have progressed"
+        )
         logger.info(f"✓ Session progressed to stage: {state.current_stage}")
 
         # Clean up
@@ -830,12 +836,14 @@ async def test_advanced_error_scenarios():
         session_manager = VideoSystemSessionManager(
             session_service=failing_service,
             enable_fallback=True,
-            run_migration_check=False
+            run_migration_check=False,
         )
 
         # Should succeed with fallback
         request = VideoGenerationRequest(prompt="Fallback test")
-        session_id = await session_manager.create_session(request, user_id="fallback_user")
+        session_id = await session_manager.create_session(
+            request, user_id="fallback_user"
+        )
         assert session_id is not None, "Should succeed with fallback"
         logger.info("✓ Fallback mechanism working")
 
@@ -843,9 +851,7 @@ async def test_advanced_error_scenarios():
         async def concurrent_operation(op_id):
             try:
                 return await session_manager.update_session_state(
-                    session_id, 
-                    concurrent_op=op_id,
-                    timestamp=time.time()
+                    session_id, concurrent_op=op_id, timestamp=time.time()
                 )
             except Exception:
                 return False
@@ -858,7 +864,9 @@ async def test_advanced_error_scenarios():
         # Test 3: Session corruption recovery
         try:
             # Simulate corrupted session data
-            await session_manager.update_session_state("corrupted_session_id", test=True)
+            await session_manager.update_session_state(
+                "corrupted_session_id", test=True
+            )
         except (SessionError, ValueError):
             logger.info("✓ Corrupted session handled correctly")
 
@@ -879,7 +887,7 @@ async def test_advanced_error_scenarios():
                 await session_manager.delete_session(sid)
             except Exception:
                 pass
-        
+
         await session_manager.close()
 
         return True
@@ -894,44 +902,51 @@ async def test_performance_under_load():
     logger.info("⚡ Testing Performance Under Load...")
 
     session_manager = VideoSystemSessionManager(
-        session_service=InMemorySessionService(),
-        run_migration_check=False
+        session_service=InMemorySessionService(), run_migration_check=False
     )
 
     try:
         # Test 1: Session creation performance
         start_time = time.time()
         session_ids = []
-        
+
         for i in range(20):
             request = VideoGenerationRequest(prompt=f"Performance test {i}")
             session_id = await session_manager.create_session(request, f"perf_user_{i}")
             session_ids.append(session_id)
-        
+
         creation_time = time.time() - start_time
         avg_creation_time = creation_time / 20
-        logger.info(f"✓ Average session creation time: {avg_creation_time*1000:.2f}ms")
-        
+        logger.info(
+            f"✓ Average session creation time: {avg_creation_time * 1000:.2f}ms"
+        )
+
         # Verify performance requirement (should be < 100ms)
-        assert avg_creation_time < 0.1, f"Creation time {avg_creation_time:.3f}s exceeds 100ms limit"
+        assert avg_creation_time < 0.1, (
+            f"Creation time {avg_creation_time:.3f}s exceeds 100ms limit"
+        )
 
         # Test 2: Session retrieval performance
         start_time = time.time()
-        
+
         for session_id in session_ids:
             session = await session_manager.get_session(session_id)
             assert session is not None
-        
+
         retrieval_time = time.time() - start_time
         avg_retrieval_time = retrieval_time / len(session_ids)
-        logger.info(f"✓ Average session retrieval time: {avg_retrieval_time*1000:.2f}ms")
-        
+        logger.info(
+            f"✓ Average session retrieval time: {avg_retrieval_time * 1000:.2f}ms"
+        )
+
         # Verify performance requirement (should be < 50ms)
-        assert avg_retrieval_time < 0.05, f"Retrieval time {avg_retrieval_time:.3f}s exceeds 50ms limit"
+        assert avg_retrieval_time < 0.05, (
+            f"Retrieval time {avg_retrieval_time:.3f}s exceeds 50ms limit"
+        )
 
         # Test 3: Bulk operations performance
         start_time = time.time()
-        
+
         # Update all sessions
         update_tasks = []
         for session_id in session_ids:
@@ -939,10 +954,12 @@ async def test_performance_under_load():
                 session_id, VideoGenerationStage.RESEARCHING, 0.1
             )
             update_tasks.append(task)
-        
+
         await asyncio.gather(*update_tasks)
         bulk_update_time = time.time() - start_time
-        logger.info(f"✓ Bulk update time for {len(session_ids)} sessions: {bulk_update_time:.2f}s")
+        logger.info(
+            f"✓ Bulk update time for {len(session_ids)} sessions: {bulk_update_time:.2f}s"
+        )
 
         # Test 4: Memory usage monitoring
         stats = await session_manager.get_statistics()
@@ -1040,7 +1057,7 @@ async def run_comprehensive_integration_tests():
         "test_results": results,
         "coverage_areas": [
             "Session CRUD operations",
-            "Event-based state management", 
+            "Event-based state management",
             "Session listing and pagination",
             "Cleanup and maintenance",
             "Error handling and recovery",
@@ -1050,14 +1067,14 @@ async def run_comprehensive_integration_tests():
             "Orchestration integration",
             "End-to-end workflows",
             "Advanced error scenarios",
-            "Performance under load"
-        ]
+            "Performance under load",
+        ],
     }
 
     # Save test report
     report_path = "test_integration_report.json"
     try:
-        with open(report_path, 'w') as f:
+        with open(report_path, "w") as f:
             json.dump(test_report, f, indent=2)
         logger.info(f"📄 Test report saved to: {report_path}")
     except Exception as e:

@@ -35,6 +35,7 @@ vertexai.init(
     staging_bucket=STAGING_BUCKET,
 )
 
+
 # Function to update the .env file
 def update_env_file(agent_engine_id, env_file_path):
     """Updates the .env file with the agent engine ID."""
@@ -43,6 +44,7 @@ def update_env_file(agent_engine_id, env_file_path):
         print(f"Updated AGENT_ENGINE_ID in {env_file_path} to {agent_engine_id}")
     except Exception as e:
         print(f"Error updating .env file: {e}")
+
 
 logger.info("deploying app...")
 app = AdkApp(
@@ -75,7 +77,9 @@ remote_app = agent_engines.create(
 )
 
 # log remote_app
-logging.info(f"Deployed agent to Vertex AI Agent Engine successfully, resource name: {remote_app.resource_name}")
+logging.info(
+    f"Deployed agent to Vertex AI Agent Engine successfully, resource name: {remote_app.resource_name}"
+)
 
 # Update the .env file with the new Agent Engine ID
 update_env_file(remote_app.resource_name, ENV_FILE_PATH)

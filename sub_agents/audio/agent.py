@@ -17,20 +17,14 @@
 from typing import Dict, Any
 from google.adk.agents import Agent
 from .prompts import return_instructions_audio
-from .tools import (
-    gemini_tts_tool,
-    audio_timing_tool,
-    audio_format_tool
-)
+from .tools import gemini_tts_tool, audio_timing_tool, audio_format_tool
 from .tools.gemini_tts import check_gemini_tts_health
 
-from video_system.shared_libraries import (
-    get_health_monitor,
-    get_logger
-)
+from video_system.shared_libraries import get_health_monitor, get_logger
 
 # Configure logger for audio agent
 logger = get_logger("audio_agent")
+
 
 # Health check function for audio services
 def check_audio_services_health() -> Dict[str, Any]:
@@ -38,27 +32,25 @@ def check_audio_services_health() -> Dict[str, Any]:
     try:
         # Check Gemini TTS service
         tts_status = check_gemini_tts_health()
-        
+
         if tts_status.get("status") == "healthy":
             return {
                 "status": "healthy",
-                "details": {"message": "Audio services are operational"}
+                "details": {"message": "Audio services are operational"},
             }
         elif tts_status.get("status") == "degraded":
             return {
                 "status": "degraded",
-                "details": {"message": "Some audio services are experiencing issues"}
+                "details": {"message": "Some audio services are experiencing issues"},
             }
         else:
             return {
                 "status": "unhealthy",
-                "details": {"error": "Audio services are unavailable"}
+                "details": {"error": "Audio services are unavailable"},
             }
     except Exception as e:
-        return {
-            "status": "unhealthy",
-            "details": {"error": str(e)}
-        }
+        return {"status": "unhealthy", "details": {"error": str(e)}}
+
 
 # Register health checks for audio services
 health_monitor = get_health_monitor()
@@ -66,27 +58,23 @@ health_monitor.service_registry.register_service(
     service_name="gemini_tts",
     health_check_func=check_gemini_tts_health,
     health_check_interval=300,  # Check every 5 minutes
-    critical=True
+    critical=True,
 )
 
 health_monitor.service_registry.register_service(
     service_name="audio_services",
     health_check_func=check_audio_services_health,
     health_check_interval=180,  # Check every 3 minutes
-    critical=True
+    critical=True,
 )
 
 logger.info("Audio agent initialized with health monitoring")
 
 # Audio Agent with TTS and audio processing tools and error handling
 audio_agent = Agent(
-    model='gemini-2.5-pro',
-    name='audio_agent',
-    description='Handles text-to-speech and audio processing for video narration.',
+    model="gemini-2.5-pro",
+    name="audio_agent",
+    description="Handles text-to-speech and audio processing for video narration.",
     instruction=return_instructions_audio(),
-    tools=[
-        gemini_tts_tool,
-        audio_timing_tool,
-        audio_format_tool
-    ]
+    tools=[gemini_tts_tool, audio_timing_tool, audio_format_tool],
 )

@@ -18,10 +18,7 @@ from google.adk.agents import LlmAgent
 from .prompts import return_instructions_research
 from .tools.web_search import serper_web_search_tool, check_serper_health
 
-from video_system.shared_libraries import (
-    get_health_monitor,
-    get_logger
-)
+from video_system.shared_libraries import get_health_monitor, get_logger
 
 # Configure logger for research agent
 logger = get_logger("research_agent")
@@ -32,16 +29,16 @@ health_monitor.service_registry.register_service(
     service_name="serper_api",
     health_check_func=check_serper_health,
     health_check_interval=300,  # Check every 5 minutes
-    critical=True
+    critical=True,
 )
 
 logger.info("Research agent initialized with health monitoring")
 
 # Research Agent with web search capabilities and error handling
 research_agent = LlmAgent(
-    model='gemini-2.5-pro',
-    name='research_agent',
-    description='Performs web searches to gather information and context for video content.',
+    model="gemini-2.5-pro",
+    name="research_agent",
+    description="Performs web searches to gather information and context for video content.",
     instruction=return_instructions_research(),
-    tools=[serper_web_search_tool]
+    tools=[serper_web_search_tool],
 )

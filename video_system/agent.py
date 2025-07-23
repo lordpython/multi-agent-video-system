@@ -14,26 +14,39 @@
 
 """Video Orchestrator Agent - Coordinates the entire video generation process."""
 
-from google.adk.agents import SequentialAgent
+try:
+    from google.adk.agents import SequentialAgent
+    ADK_AVAILABLE = True
+except ImportError:
+    ADK_AVAILABLE = False
+    # Define mock class for environments without ADK
+    class SequentialAgent:
+        def __init__(self, **kwargs):
+            pass
 
 # Import all sub-agents from their canonical locations
-from video_system.agents.research_agent.agent import research_agent
-from video_system.agents.story_agent.agent import story_agent
-from video_system.agents.asset_sourcing_agent.agent import asset_sourcing_agent
-from video_system.agents.image_generation_agent.agent import image_generation_agent
-from video_system.agents.audio_agent.agent import audio_agent
-from video_system.agents.video_assembly_agent.agent import video_assembly_agent
+from video_system.agents.research_agent.agent import root_agent as research_agent
+from video_system.agents.story_agent.agent import root_agent as story_agent
+from video_system.agents.asset_sourcing_agent.agent import root_agent as asset_sourcing_agent
+from video_system.agents.image_generation_agent.agent import root_agent as image_generation_agent
+from video_system.agents.audio_agent.agent import root_agent as audio_agent
+from video_system.agents.video_assembly_agent.agent import root_agent as video_assembly_agent
 
 # Root agent orchestrating the video generation process sequentially
-root_agent = SequentialAgent(
-    name='video_system_orchestrator',
-    description='Orchestrates the entire video generation process by running sub-agents in sequence.',
-    sub_agents=[
-        research_agent,
-        story_agent,
-        asset_sourcing_agent,
-        image_generation_agent,
-        audio_agent,
-        video_assembly_agent,
-    ]
-)
+if ADK_AVAILABLE:
+    root_agent = SequentialAgent(
+        name="video_system_orchestrator",
+        description="Orchestrates the entire video generation process by running sub-agents in sequence.",
+        sub_agents=[
+            research_agent,
+            story_agent,
+            asset_sourcing_agent,
+            image_generation_agent,
+            audio_agent,
+            video_assembly_agent,
+        ],
+    )
+else:
+    # Fallback for environments without ADK
+    root_agent = None
+    print("Warning: ADK not available - video orchestrator disabled")

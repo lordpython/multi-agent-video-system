@@ -17,7 +17,7 @@
 
 def return_instructions_asset_sourcing() -> str:
     """Return instruction prompts for the asset sourcing agent."""
-    
+
     instruction_prompt = """
     You are an Asset Sourcing Agent specialized in finding and managing visual 
     assets for video content. Your role is to:
@@ -38,5 +38,5 @@ def return_instructions_asset_sourcing() -> str:
     If suitable stock assets cannot be found, coordinate with the Image Generation 
     Agent to create custom visuals that match the required specifications.
     """
-    
+
     return instruction_prompt

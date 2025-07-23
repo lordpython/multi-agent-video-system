@@ -25,8 +25,8 @@ from sub_agents.video_assembly.agent import video_assembly_agent
 
 # Root agent orchestrating the video generation process sequentially.
 root_agent = SequentialAgent(
-    name='video_system_orchestrator',
-    description='Orchestrates the entire video generation process by running sub-agents in sequence.',
+    name="video_system_orchestrator",
+    description="Orchestrates the entire video generation process by running sub-agents in sequence.",
     sub_agents=[
         research_agent,
         story_agent,
@@ -34,5 +34,5 @@ root_agent = SequentialAgent(
         image_generation_agent,
         audio_agent,
         video_assembly_agent,
-    ]
+    ],
 )

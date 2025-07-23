@@ -17,7 +17,7 @@
 
 def return_instructions_audio() -> str:
     """Return instruction prompts for the audio agent."""
-    
+
     instruction_prompt = """
     You are an Audio Agent specialized in handling all audio processing for video content. 
     Your role is to:
@@ -45,5 +45,5 @@ def return_instructions_audio() -> str:
     Work closely with the Video Assembly Agent to ensure perfect audio-video 
     synchronization in the final output.
     """
-    
+
     return instruction_prompt

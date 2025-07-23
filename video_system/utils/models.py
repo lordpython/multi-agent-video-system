@@ -27,6 +27,7 @@ import uuid
 
 class VideoStatus(str, Enum):
     """Enumeration for video generation status."""
+
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -36,6 +37,7 @@ class VideoStatus(str, Enum):
 
 class AssetType(str, Enum):
     """Enumeration for asset types."""
+
     IMAGE = "image"
     VIDEO = "video"
     AUDIO = "audio"
@@ -43,6 +45,7 @@ class AssetType(str, Enum):
 
 class VideoQuality(str, Enum):
     """Enumeration for video quality settings."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -51,6 +54,7 @@ class VideoQuality(str, Enum):
 
 class VideoStyle(str, Enum):
     """Enumeration for video styles."""
+
     PROFESSIONAL = "professional"
     CASUAL = "casual"
     EDUCATIONAL = "educational"
@@ -60,117 +64,152 @@ class VideoStyle(str, Enum):
 
 class VideoGenerationRequest(BaseModel):
     """Request model for video generation."""
-    prompt: str = Field(..., description="Text prompt for video generation", min_length=10, max_length=2000)
-    duration_preference: Optional[int] = Field(60, description="Preferred video duration in seconds", ge=10, le=600)
-    style: Optional[VideoStyle] = Field(VideoStyle.PROFESSIONAL, description="Video style preference")
-    voice_preference: Optional[str] = Field("neutral", description="Voice preference for narration")
-    quality: Optional[VideoQuality] = Field(VideoQuality.HIGH, description="Video quality setting")
-    
-    @field_validator('prompt')
+
+    prompt: str = Field(
+        ...,
+        description="Text prompt for video generation",
+        min_length=10,
+        max_length=2000,
+    )
+    duration_preference: Optional[int] = Field(
+        60, description="Preferred video duration in seconds", ge=10, le=600
+    )
+    style: Optional[VideoStyle] = Field(
+        VideoStyle.PROFESSIONAL, description="Video style preference"
+    )
+    voice_preference: Optional[str] = Field(
+        "neutral", description="Voice preference for narration"
+    )
+    quality: Optional[VideoQuality] = Field(
+        VideoQuality.HIGH, description="Video quality setting"
+    )
+
+    @field_validator("prompt")
     @classmethod
     def validate_prompt(cls, v):
         if not v.strip():
-            raise ValueError('Prompt cannot be empty or whitespace only')
+            raise ValueError("Prompt cannot be empty or whitespace only")
         return v.strip()
 
 
 class VideoScene(BaseModel):
     """Model representing a single scene in the video."""
+
     scene_number: int = Field(..., description="Sequential scene number", ge=1)
-    description: str = Field(..., description="Scene description", min_length=10, max_length=500)
-    visual_requirements: List[str] = Field(..., description="List of visual requirements for the scene")
-    dialogue: str = Field(..., description="Dialogue or narration text for the scene", min_length=1)
+    description: str = Field(
+        ..., description="Scene description", min_length=10, max_length=500
+    )
+    visual_requirements: List[str] = Field(
+        ..., description="List of visual requirements for the scene"
+    )
+    dialogue: str = Field(
+        ..., description="Dialogue or narration text for the scene", min_length=1
+    )
     duration: float = Field(..., description="Scene duration in seconds", gt=0, le=120)
-    assets: Optional[List[str]] = Field(default=[], description="List of asset IDs for the scene")
-    
-    @field_validator('visual_requirements')
+    assets: Optional[List[str]] = Field(
+        default=[], description="List of asset IDs for the scene"
+    )
+
+    @field_validator("visual_requirements")
     @classmethod
     def validate_visual_requirements(cls, v):
         if not v:
-            raise ValueError('At least one visual requirement must be specified')
+            raise ValueError("At least one visual requirement must be specified")
         return [req.strip() for req in v if req.strip()]
 
 
 class VideoScript(BaseModel):
     """Model representing the complete video script."""
+
     title: str = Field(..., description="Video title", min_length=1, max_length=200)
-    total_duration: float = Field(..., description="Total video duration in seconds", gt=0, le=600)
-    scenes: List[VideoScene] = Field(..., description="List of video scenes", min_length=1)
+    total_duration: float = Field(
+        ..., description="Total video duration in seconds", gt=0, le=600
+    )
+    scenes: List[VideoScene] = Field(
+        ..., description="List of video scenes", min_length=1
+    )
     metadata: Dict[str, Any] = Field(default={}, description="Additional metadata")
-    
-    @field_validator('scenes')
+
+    @field_validator("scenes")
     @classmethod
     def validate_scenes_sequence(cls, v):
         if not v:
-            raise ValueError('At least one scene is required')
-        
+            raise ValueError("At least one scene is required")
+
         # Check scene numbers are sequential
         expected_numbers = list(range(1, len(v) + 1))
         actual_numbers = [scene.scene_number for scene in v]
         if actual_numbers != expected_numbers:
-            raise ValueError('Scene numbers must be sequential starting from 1')
-        
+            raise ValueError("Scene numbers must be sequential starting from 1")
+
         return v
-    
-    @model_validator(mode='after')
+
+    @model_validator(mode="after")
     def validate_total_duration(self):
         if self.scenes:
             scene_duration_sum = sum(scene.duration for scene in self.scenes)
-            if abs(self.total_duration - scene_duration_sum) > 1.0:  # Allow 1 second tolerance
-                raise ValueError('Total duration must match sum of scene durations')
+            if (
+                abs(self.total_duration - scene_duration_sum) > 1.0
+            ):  # Allow 1 second tolerance
+                raise ValueError("Total duration must match sum of scene durations")
         return self
 
 
 class AssetItem(BaseModel):
     """Model representing a media asset."""
+
     asset_id: str = Field(..., description="Unique asset identifier")
     asset_type: str = Field(..., description="Asset type: 'image', 'video', 'audio'")
     source_url: str = Field(..., description="Original source URL")
-    local_path: Optional[str] = Field(None, description="Local file path after download")
+    local_path: Optional[str] = Field(
+        None, description="Local file path after download"
+    )
     usage_rights: str = Field(..., description="Usage rights information")
-    metadata: Dict[str, Any] = Field(default={}, description="Additional asset metadata")
-    
-    @field_validator('asset_type')
+    metadata: Dict[str, Any] = Field(
+        default={}, description="Additional asset metadata"
+    )
+
+    @field_validator("asset_type")
     @classmethod
     def validate_asset_type(cls, v: str) -> str:
         """Validate that asset_type is one of the allowed values."""
-        allowed_types = {'image', 'video', 'audio'}
+        allowed_types = {"image", "video", "audio"}
         if v.lower() not in allowed_types:
             raise ValueError(f"asset_type must be one of {allowed_types}, got: {v}")
         return v.lower()
-    
-    @field_validator('asset_id')
+
+    @field_validator("asset_id")
     @classmethod
     def validate_asset_id(cls, v: str) -> str:
         """Validate that asset_id is not empty."""
         if not v or not v.strip():
             raise ValueError("asset_id cannot be empty")
         return v.strip()
-    
-    @field_validator('source_url')
+
+    @field_validator("source_url")
     @classmethod
     def validate_source_url(cls, v: str) -> str:
         """Validate that source_url is not empty."""
         if not v or not v.strip():
             raise ValueError("source_url cannot be empty")
         return v.strip()
-    
-    @field_validator('usage_rights')
+
+    @field_validator("usage_rights")
     @classmethod
     def validate_usage_rights(cls, v: str) -> str:
         """Validate that usage_rights is not empty."""
         if not v or not v.strip():
             raise ValueError("usage_rights cannot be empty")
         return v.strip()
-    
+
     def get(self, key: str, default=None):
         """Dictionary-style access for backward compatibility.
-        
+
         This method provides backward compatibility for code that expects
         dictionary-style access to asset properties.
         """
         return getattr(self, key, default)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
         return self.model_dump()
@@ -178,45 +217,67 @@ class AssetItem(BaseModel):
 
 class VideoGenerationStatus(BaseModel):
     """Model representing the status of video generation."""
+
     session_id: str = Field(..., description="Unique session identifier")
-    status: str = Field(..., description="Current status: 'processing', 'completed', 'failed'")
+    status: str = Field(
+        ..., description="Current status: 'processing', 'completed', 'failed'"
+    )
     progress: float = Field(..., description="Progress percentage (0.0 to 1.0)")
     current_stage: str = Field(..., description="Current processing stage")
-    estimated_completion: Optional[str] = Field(None, description="Estimated completion time")
+    estimated_completion: Optional[str] = Field(
+        None, description="Estimated completion time"
+    )
     error_message: Optional[str] = Field(None, description="Error message if failed")
 
 
 class ResearchRequest(BaseModel):
     """Request model for research agent."""
+
     topic: str = Field(..., description="Research topic")
     scope: Optional[str] = Field("general", description="Research scope")
-    depth_requirements: Optional[str] = Field("standard", description="Depth of research required")
+    depth_requirements: Optional[str] = Field(
+        "standard", description="Depth of research required"
+    )
 
 
 class ResearchData(BaseModel):
     """Response model from research agent."""
+
     facts: List[str] = Field(..., description="List of researched facts")
     sources: List[str] = Field(..., description="List of source URLs")
     key_points: List[str] = Field(..., description="Key points extracted")
-    context: Dict[str, Any] = Field(default={}, description="Additional context information")
+    context: Dict[str, Any] = Field(
+        default={}, description="Additional context information"
+    )
 
 
 class ScriptRequest(BaseModel):
     """Request model for story agent."""
-    research_data: ResearchData = Field(..., description="Research data to base script on")
-    style_preferences: Optional[Dict[str, Any]] = Field(default={}, description="Style preferences")
+
+    research_data: ResearchData = Field(
+        ..., description="Research data to base script on"
+    )
+    style_preferences: Optional[Dict[str, Any]] = Field(
+        default={}, description="Style preferences"
+    )
     duration: Optional[int] = Field(60, description="Target duration in seconds")
 
 
 class AssetRequest(BaseModel):
     """Request model for asset sourcing agent."""
+
     scene_descriptions: List[str] = Field(..., description="List of scene descriptions")
-    style_requirements: Optional[Dict[str, Any]] = Field(default={}, description="Style requirements")
-    specifications: Optional[Dict[str, Any]] = Field(default={}, description="Technical specifications")
+    style_requirements: Optional[Dict[str, Any]] = Field(
+        default={}, description="Style requirements"
+    )
+    specifications: Optional[Dict[str, Any]] = Field(
+        default={}, description="Technical specifications"
+    )
 
 
 class AssetCollection(BaseModel):
     """Response model from asset sourcing agent."""
+
     images: List[AssetItem] = Field(default=[], description="List of image assets")
     videos: List[AssetItem] = Field(default=[], description="List of video assets")
     metadata: Dict[str, Any] = Field(default={}, description="Collection metadata")
@@ -224,34 +285,53 @@ class AssetCollection(BaseModel):
 
 class AudioRequest(BaseModel):
     """Request model for audio agent."""
+
     script_text: str = Field(..., description="Text to convert to speech")
-    voice_preferences: Optional[Dict[str, Any]] = Field(default={}, description="Voice preferences")
-    timing_requirements: Optional[Dict[str, Any]] = Field(default={}, description="Timing requirements")
+    voice_preferences: Optional[Dict[str, Any]] = Field(
+        default={}, description="Voice preferences"
+    )
+    timing_requirements: Optional[Dict[str, Any]] = Field(
+        default={}, description="Timing requirements"
+    )
 
 
 class AudioAssets(BaseModel):
     """Response model from audio agent."""
-    voice_files: List[str] = Field(..., description="List of generated voice file paths")
-    timing_data: Dict[str, Any] = Field(default={}, description="Timing synchronization data")
-    synchronization_markers: List[Dict[str, Any]] = Field(default=[], description="Sync markers")
+
+    voice_files: List[str] = Field(
+        ..., description="List of generated voice file paths"
+    )
+    timing_data: Dict[str, Any] = Field(
+        default={}, description="Timing synchronization data"
+    )
+    synchronization_markers: List[Dict[str, Any]] = Field(
+        default=[], description="Sync markers"
+    )
 
 
 class AssemblyRequest(BaseModel):
     """Request model for video assembly agent."""
+
     assets: AssetCollection = Field(..., description="Collection of visual assets")
     audio: AudioAssets = Field(..., description="Audio assets")
     script: VideoScript = Field(..., description="Video script")
-    specifications: Optional[Dict[str, Any]] = Field(default={}, description="Assembly specifications")
+    specifications: Optional[Dict[str, Any]] = Field(
+        default={}, description="Assembly specifications"
+    )
 
 
 class FinalVideo(BaseModel):
     """Response model for final video."""
+
     video_file: str = Field(..., description="Path to final video file")
     metadata: Dict[str, Any] = Field(default={}, description="Video metadata")
-    quality_metrics: Optional[Dict[str, Any]] = Field(default={}, description="Quality metrics")
+    quality_metrics: Optional[Dict[str, Any]] = Field(
+        default={}, description="Quality metrics"
+    )
 
 
 # Validation utilities and helper functions
+
 
 def validate_video_duration(duration: float) -> bool:
     """Validate video duration is within acceptable range."""
@@ -281,13 +361,13 @@ def calculate_total_duration(scenes: List[VideoScene]) -> float:
 def validate_asset_url(url: str) -> bool:
     """Validate asset URL format."""
     url_pattern = re.compile(
-        r'^https?://'  # http:// or https://
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
-        r'localhost|'  # localhost...
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-        r'(?::\d+)?'  # optional port
-        r'(?:/?|[/?]\S+)$',  # path
-        re.IGNORECASE
+        r"^https?://"  # http:// or https://
+        r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|"  # domain...
+        r"localhost|"  # localhost...
+        r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # ...or ip
+        r"(?::\d+)?"  # optional port
+        r"(?:/?|[/?]\S+)$",  # path
+        re.IGNORECASE,
     )
     return url_pattern.match(url) is not None
 
@@ -299,11 +379,13 @@ def create_default_video_request(prompt: str) -> VideoGenerationRequest:
         duration_preference=60,
         style=VideoStyle.PROFESSIONAL,
         voice_preference="neutral",
-        quality=VideoQuality.HIGH
+        quality=VideoQuality.HIGH,
     )
 
 
-def create_video_status(session_id: str, status: str = "queued") -> VideoGenerationStatus:
+def create_video_status(
+    session_id: str, status: str = "queued"
+) -> VideoGenerationStatus:
     """Create a video generation status with default values."""
     return VideoGenerationStatus(
         session_id=session_id,
@@ -311,7 +393,7 @@ def create_video_status(session_id: str, status: str = "queued") -> VideoGenerat
         progress=0.0,
         current_stage="Initializing",
         estimated_completion=None,
-        error_message=None
+        error_message=None,
     )
 
 
@@ -319,7 +401,7 @@ def validate_scene_sequence(scenes: List[VideoScene]) -> bool:
     """Validate that scene numbers are sequential starting from 1."""
     if not scenes:
         return False
-    
+
     expected_numbers = list(range(1, len(scenes) + 1))
     actual_numbers = [scene.scene_number for scene in scenes]
     return actual_numbers == expected_numbers
@@ -333,24 +415,26 @@ def get_asset_by_type(assets: List[AssetItem], asset_type: str) -> List[AssetIte
 def validate_video_script_consistency(script: VideoScript) -> List[str]:
     """Validate video script consistency and return list of issues."""
     issues = []
-    
+
     # Check if total duration matches scene durations
     scene_duration_sum = sum(scene.duration for scene in script.scenes)
     if abs(script.total_duration - scene_duration_sum) > 1.0:
-        issues.append(f"Total duration ({script.total_duration}s) doesn't match sum of scene durations ({scene_duration_sum}s)")
-    
+        issues.append(
+            f"Total duration ({script.total_duration}s) doesn't match sum of scene durations ({scene_duration_sum}s)"
+        )
+
     # Check scene sequence
     if not validate_scene_sequence(script.scenes):
         issues.append("Scene numbers are not sequential starting from 1")
-    
+
     # Check for empty dialogue
     for i, scene in enumerate(script.scenes, 1):
         if not scene.dialogue.strip():
             issues.append(f"Scene {i} has empty dialogue")
-    
+
     # Check for missing visual requirements
     for i, scene in enumerate(script.scenes, 1):
         if not scene.visual_requirements:
             issues.append(f"Scene {i} has no visual requirements")
-    
+
     return issues
